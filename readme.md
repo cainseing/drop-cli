@@ -1,6 +1,6 @@
 # Drop CLI - Secure, zero-knowledge, secret sharing CLI
 
-**Drop CLI** is a command-line tool for securely sharing sensitive data—such as API keys, tokens, and credentials—through the Drop API. It uses end-to-end encryption to ensure secrets remain private and accessible only to intended recipients.
+**Drop CLI** is a command-line tool for securely sharing sensitive data—such as API keys, tokens, and credentials—through the [Drop API](https://github.com/cainseing/drop-api). It uses end-to-end encryption to ensure secrets remain private and accessible only to intended recipients.
 
 Ideal for development teams that need a fast, secure way to exchange confidential information.
 
@@ -21,7 +21,8 @@ Drop follows a zero-trust, client-side encryption model:
 
 4. **Zero-Knowledge Transport**  
    Generates a composite token containing:
-    - API Identifier
+    - Protocol Version
+    - Identifier
     - Encryption Key
 
    The encryption key is never transmitted or stored on the server.
@@ -34,14 +35,14 @@ Install the `drop` binary to your system path.
 
 ### Homebrew (macOS)
 
-    brew tap cainseing/tap
+    brew tap cainseing/tap &&
     brew install drop
 
 ### Install Script (macOS & Linux)
 
 Automatically detects your platform and installs the correct binary:
 
-    curl -sSL https://raw.githubusercontent.com/cainseing/drop-cli/main/install.sh | bash
+    curl -sL getdrop.dev/install.sh | bash
 
 ---
 
