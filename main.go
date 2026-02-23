@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-const version = "0.1.0-beta"
+const version = "v0.2.1-beta"
 const protocolVersion = "1"
 const MaxBlobSize = 1 * 1024 * 1024 // 1MB
 const MaxTTLMinutes = 10080         // 7 Days
@@ -22,9 +22,7 @@ var (
 
 var (
 	dim        = lipgloss.NewStyle().Foreground(lipgloss.Color("#555555"))
-	highlight  = lipgloss.NewStyle().Foreground(lipgloss.Color("#00FFD1")).Bold(true)
 	secret     = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFFFF")).Bold(true)
-	success    = lipgloss.NewStyle().Foreground(lipgloss.Color("#00FFD1")).Bold(true)
 	errorLabel = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFFFF")).Bold(true)
 	errorText  = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF8888"))
 )

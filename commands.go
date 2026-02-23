@@ -89,8 +89,7 @@ func createVersionCommand() *cobra.Command {
 		Short: "View running version",
 		Args:  cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("\n%s %s\n", highlight.Render(">"), success.Render("VERSION"))
-			fmt.Printf("%s %s\n", dim.Render("──"), dim.Render(version))
+			PrintInfo("Version", fmt.Sprintf("\n%s\n", dim.Render(version)))
 		},
 	}
 }

@@ -1,5 +1,5 @@
 BINARY_NAME=drop
-VERSION=0.2.0-beta
+VERSION=0.2.1-beta
 
 .PHONY: all build install clean test
 

@@ -8,10 +8,16 @@ import (
 
 var (
 	green = lipgloss.Color("#9bddca")
+	blue  = lipgloss.Color("#5292e6")
 	red   = lipgloss.Color("#FF6961")
 
 	successStyle = lipgloss.NewStyle().
 			Background(green).
+			Foreground(lipgloss.Color("#000000")).
+			Padding(0, 1).
+			Bold(true)
+	infoSyle = lipgloss.NewStyle().
+			Background(blue).
 			Foreground(lipgloss.Color("#000000")).
 			Padding(0, 1).
 			Bold(true)
@@ -30,6 +36,17 @@ func PrintSuccess(header string, message string) {
 	}
 
 	fmt.Printf("%s%s\n", successStyle.Render("✔"), successStyle.Render(header))
+	fmt.Printf("%s", message)
+}
+
+func PrintInfo(header string, message string) {
+	fmt.Println()
+
+	if header == "" && message == "" {
+		return
+	}
+
+	fmt.Printf("%s\n", infoSyle.Render(header))
 	fmt.Printf("%s", message)
 }
 
