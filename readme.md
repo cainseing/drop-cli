@@ -6,7 +6,7 @@ Ideal for development teams that need a fast, secure way to exchange confidentia
 
 ---
 
-## 🔐 Security & Technical Workflow
+## Security & Technical Workflow
 
 Drop follows a zero-trust, client-side encryption model:
 
@@ -29,7 +29,7 @@ Drop follows a zero-trust, client-side encryption model:
 
 ---
 
-## 📦 Installation
+## Installation
 
 Install the `drop` binary to your system path.
 
@@ -46,7 +46,7 @@ Automatically detects your platform and installs the correct binary:
 
 ---
 
-## 🚀 Usage
+## Usage
 
 ### Create a Secret
 
@@ -77,7 +77,7 @@ Automatically detects your platform and installs the correct binary:
 ---
 
 
-## ⚙️ Command-Line Options
+## Command-Line Options
 
 ### Drop Flags
 
@@ -92,7 +92,7 @@ Example:
 
 ---
 
-## 🏗️ Build & Release
+## Build & Release
 
 The project supports cross-compilation for major platforms.
 
@@ -104,17 +104,16 @@ This generates binaries for:
 
 - Linux
 - macOS
-- Windows
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome via a pull request
 
 ---
 
-## 🛡️ Security & Support
+## Security & Support
 
 - Report security issues **privately**.
 - Open issues on GitHub for bugs or feature requests. 

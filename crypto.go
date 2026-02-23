@@ -5,7 +5,6 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
 )
@@ -25,7 +24,7 @@ func decrypt(ciphertext []byte, key []byte) ([]byte, error) {
 
 	nonceSize := gcm.NonceSize()
 	if len(ciphertext) < nonceSize {
-		return nil, errors.New("ciphertext too short")
+		return nil, fmt.Errorf("")
 	}
 
 	nonce, sealed := ciphertext[:nonceSize], ciphertext[nonceSize:]
@@ -80,7 +79,6 @@ func encrypt(plaintext []byte) ([]byte, []byte, error) {
 		return nil, nil, err
 	}
 
-	// Encrypt
 	ciphertext := gcm.Seal(nonce, nonce, envelope, nil)
 	return ciphertext, key, nil
 }

@@ -90,11 +90,11 @@ func purgeBlob(id string) (bool, error) {
 		Delete(viper.GetString("api_url") + "/blob/" + id)
 
 	if resp.StatusCode() == 404 {
-		return false, fmt.Errorf("Blob was not found")
+		return false, fmt.Errorf("This drop was not found")
 	}
 
 	if err != nil || resp.IsError() {
-		return false, fmt.Errorf("Request to API failed")
+		return false, fmt.Errorf("Request to API failed, please try again")
 	}
 
 	return true, nil
