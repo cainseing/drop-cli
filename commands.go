@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 )
 
@@ -89,7 +90,20 @@ func createVersionCommand() *cobra.Command {
 		Short: "View running version",
 		Args:  cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
-			PrintInfo("Version", fmt.Sprintf("\n%s\n", dim.Render(version)))
+			result := checkForUpdates(version, true)
+
+			if result {
+				return
+			}
+
+			message := fmt.Sprintf("%s", pterm.Gray(version))
+
+			fmt.Println()
+			pterm.DefaultBox.
+				WithTitle(pterm.LightYellow(" Version ")).
+				WithBoxStyle(pterm.NewStyle(pterm.FgLightYellow)).
+				Println(message)
+			fmt.Println()
 		},
 	}
 }

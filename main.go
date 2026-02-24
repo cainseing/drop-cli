@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-const version = "v0.2.1-beta"
+const version = "v0.3.0-beta"
 const protocolVersion = "1"
 const MaxBlobSize = 1 * 1024 * 1024 // 1MB
 const MaxTTLMinutes = 10080         // 7 Days
@@ -32,7 +32,11 @@ func main() {
 		if cfgFile != "" {
 			viper.SetConfigFile(cfgFile)
 		} else {
-			home, _ := os.UserHomeDir()
+			home, err := os.UserHomeDir()
+			if err != nil {
+				// If we can't find home, we skip config loading rather than failing
+				return
+			}
 			viper.AddConfigPath(filepath.Join(home, ".config", "drop"))
 			viper.SetConfigName("config")
 			viper.SetConfigType("yaml")
@@ -44,6 +48,9 @@ func main() {
 	})
 
 	rootCmd := createRootCmd()
+
+	checkForUpdates(version, false)
+
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}

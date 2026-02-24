@@ -8,8 +8,8 @@ Only the latest version of the Drop CLI is supported for security updates. Pleas
 
 | Version | Supported          |
 | ------- | ------------------ |
-| v0.1.x  | ✅ Supported       |
-| < v0.1  | ❌ Not Supported   |
+| v0.3.x  | ✅ Supported       |
+| < v0.3  | ❌ Not Supported   |
 
 ## Security Architecture
 

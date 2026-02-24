@@ -4,7 +4,7 @@
 REPO="cainseing/drop-cli"
 INSTALL_PATH="/usr/local/bin/drop"
 # Points to the raw file in the main branch's bin folder
-BASE_URL="https://raw.githubusercontent.com/$REPO/main/bin"
+BASE_URL="https://raw.githubusercontent.com/$REPO/releases/latest/bin"
 
 echo "Checking system compatibility..."
 
