@@ -1,4 +1,4 @@
-package main
+package crypto
 
 import (
 	"crypto/aes"
@@ -11,7 +11,7 @@ import (
 
 const MIN_SIZE = 128
 
-func decrypt(ciphertext []byte, key []byte) ([]byte, error) {
+func Decrypt(ciphertext []byte, key []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
@@ -45,7 +45,7 @@ func decrypt(ciphertext []byte, key []byte) ([]byte, error) {
 	return envelope[4 : 4+actualLen], nil
 }
 
-func encrypt(plaintext []byte) ([]byte, []byte, error) {
+func Encrypt(plaintext []byte) ([]byte, []byte, error) {
 	// Envelope: [Length][Data][Padding]
 	actualLen := uint32(len(plaintext))
 	envelope := make([]byte, 4)

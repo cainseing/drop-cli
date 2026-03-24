@@ -1,4 +1,4 @@
-package main
+package update
 
 import (
 	"encoding/json"
@@ -12,7 +12,7 @@ import (
 	"github.com/pterm/pterm"
 )
 
-func checkForUpdates(currentVersion string, force bool) bool {
+func CheckForUpdates(currentVersion string, force bool) bool {
 	// Pipe Detection
 	fi, _ := os.Stdout.Stat()
 	if (fi.Mode() & os.ModeCharDevice) == 0 {

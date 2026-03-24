@@ -1,15 +1,23 @@
-package main
+package app
 
 import (
 	"fmt"
 	"io"
 	"os"
 
+	"github.com/cainseing/drop-cli/internal/api"
+	"github.com/cainseing/drop-cli/internal/config"
+	"github.com/cainseing/drop-cli/internal/update"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 )
 
-func createRootCmd() *cobra.Command {
+var (
+	ttl   int
+	reads int
+)
+
+func CreateRootCmd() *cobra.Command {
 	var rootCmd = &cobra.Command{
 		Use:   "drop [secret]",
 		Short: "Secure, zero-knowledge, secret sharing CLI",
@@ -32,7 +40,7 @@ func createRootCmd() *cobra.Command {
 				return
 			}
 
-			handleCreateCommand(input, ttl, reads)
+			api.HandleCreateCommand(input, ttl, reads)
 		},
 	}
 
@@ -48,7 +56,7 @@ func createGetCmd() *cobra.Command {
 		Short: "Fetch drop",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			handleGetCommand(args[0])
+			api.HandleGetCommand(args[0])
 		},
 	}
 }
@@ -59,7 +67,7 @@ func createPurgeCmd() *cobra.Command {
 		Short: "Purge a drop",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			handlePurgeCommand(args[0])
+			api.HandlePurgeCommand(args[0])
 		},
 	}
 }
@@ -90,13 +98,13 @@ func createVersionCommand() *cobra.Command {
 		Short: "View running version",
 		Args:  cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
-			result := checkForUpdates(version, true)
+			result := update.CheckForUpdates(config.Version, true)
 
 			if result {
 				return
 			}
 
-			message := fmt.Sprintf("%s", pterm.Gray(version))
+			message := fmt.Sprintf("%s", pterm.Gray(config.Version))
 
 			fmt.Println()
 			pterm.DefaultBox.

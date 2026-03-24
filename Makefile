@@ -8,7 +8,7 @@ all: build
 # Build for the current architecture
 build:
 	@echo "🛠️  Building $(BINARY_NAME)..."
-	go build -o $(BINARY_NAME) .
+	go build -o $(BINARY_NAME) ./cmd/drop
 
 # Install to your system path (Standard for Linux/macOS)
 install: build
@@ -19,10 +19,10 @@ install: build
 # Build for multiple platforms (Cross-Compilation)
 release:
 	@echo "🌎 Building for multiple platforms..."
-	GOOS=linux GOARCH=amd64 go build -o bin/$(BINARY_NAME)-linux-amd64 .
-	GOOS=linux GOARCH=arm64 go build -o bin/$(BINARY_NAME)-linux-arm64 .
-	GOOS=darwin GOARCH=arm64 go build -o bin/$(BINARY_NAME)-darwin-arm64 .
-	GOOS=darwin GOARCH=amd64 go build -o bin/$(BINARY_NAME)-darwin-amd64 .
+	GOOS=linux GOARCH=amd64 go build -o bin/$(BINARY_NAME)-linux-amd64 ./cmd/drop
+	GOOS=linux GOARCH=arm64 go build -o bin/$(BINARY_NAME)-linux-arm64 ./cmd/drop
+	GOOS=darwin GOARCH=arm64 go build -o bin/$(BINARY_NAME)-darwin-arm64 ./cmd/drop
+	GOOS=darwin GOARCH=amd64 go build -o bin/$(BINARY_NAME)-darwin-amd64 ./cmd/drop
 # 	GOOS=windows GOARCH=amd64 go build -o bin/$(BINARY_NAME)-windows-amd64.exe .
 # 	GOOS=windows GOARCH=arm64 go build -o bin/$(BINARY_NAME)-windows-arm64.exe .
 

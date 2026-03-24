@@ -4,27 +4,15 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/charmbracelet/lipgloss"
+	"github.com/cainseing/drop-cli/internal/app"
+	"github.com/cainseing/drop-cli/internal/config"
+	"github.com/cainseing/drop-cli/internal/update"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-const version = "v0.3.0-beta"
-const protocolVersion = "1"
-const MaxBlobSize = 1 * 1024 * 1024 // 1MB
-const MaxTTLMinutes = 10080         // 7 Days
-
 var (
-	ttl     int
 	cfgFile string
-	reads   int
-)
-
-var (
-	dim        = lipgloss.NewStyle().Foreground(lipgloss.Color("#555555"))
-	secret     = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFFFF")).Bold(true)
-	errorLabel = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFFFF")).Bold(true)
-	errorText  = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF8888"))
 )
 
 func main() {
@@ -47,9 +35,9 @@ func main() {
 		_ = viper.ReadInConfig()
 	})
 
-	rootCmd := createRootCmd()
+	rootCmd := app.CreateRootCmd()
 
-	checkForUpdates(version, false)
+	update.CheckForUpdates(config.Version, false)
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
