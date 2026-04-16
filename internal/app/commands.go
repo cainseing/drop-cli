@@ -13,8 +13,9 @@ import (
 )
 
 var (
-	ttl   int
-	reads int
+	ttl    int
+	reads  int
+	signed bool
 )
 
 func CreateRootCmd() *cobra.Command {
@@ -40,13 +41,21 @@ func CreateRootCmd() *cobra.Command {
 				return
 			}
 
-			api.HandleCreateCommand(input, ttl, reads)
+			api.HandleCreateCommand(input, ttl, reads, signed)
 		},
 	}
 
 	rootCmd.Flags().IntVarP(&ttl, "ttl", "t", 5, "Expiry in minutes")
 	rootCmd.Flags().IntVarP(&reads, "reads", "r", 1, "Maximum number of times drop can be read")
-	rootCmd.AddCommand(createGetCmd(), createPurgeCmd(), createVersionCommand())
+	rootCmd.Flags().BoolVarP(&signed, "signed", "s", false, "Sign the drop")
+
+	rootCmd.AddCommand(
+		createGetCmd(),
+		createPurgeCmd(),
+		createVersionCommand(),
+		createIdentityCmd(),
+	)
+
 	return rootCmd
 }
 
@@ -72,25 +81,41 @@ func createPurgeCmd() *cobra.Command {
 	}
 }
 
-// func createConfigCmd() *cobra.Command {
-// 	var configCmd = &cobra.Command{Use: "config", Short: "Manage CLI settings"}
-// 	var setUrlCmd = &cobra.Command{
-// 		Use:  "url [url]",
-// 		Args: cobra.ExactArgs(1),
-// 		Run: func(cmd *cobra.Command, args []string) {
-// 			viper.Set("api_url", args[0])
-// 			home, _ := os.UserHomeDir()
-// 			configPath := filepath.Join(home, ".config", "drop")
-// 			os.MkdirAll(configPath, 0755)
-// 			if err := viper.WriteConfig(); err != nil {
-// 				viper.SafeWriteConfig()
-// 			}
-// 			fmt.Printf("%s%s[config]%s API Uplink set to: %s%s%s\n", ColorDim, ColorGreen, ColorReset, ColorBold, args[0], ColorReset)
-// 		},
-// 	}
-// 	configCmd.AddCommand(setUrlCmd)
-// 	return configCmd
-// }
+func createIdentityCmd() *cobra.Command {
+	var identityCmd = &cobra.Command{
+		Use:   "identity",
+		Short: "Manage your signing identity",
+	}
+
+	var setCmd = &cobra.Command{
+		Use:   "set [github|gitlab] [username]",
+		Short: "Assign a public profile to your signed drops",
+		Args:  cobra.ExactArgs(2),
+		Run: func(cmd *cobra.Command, args []string) {
+			provider, username := args[0], args[1]
+
+			if provider != "github" && provider != "gitlab" {
+				pterm.Error.Println("Unsupported provider. Use 'github' or 'gitlab'.")
+				return
+			}
+
+			// Load existing config to preserve other fields (like LastUpdateCheck)
+			cfg := config.LoadUserConfig()
+			cfg.Username = username
+			cfg.Provider = provider
+
+			if err := config.SaveUserConfig(cfg); err != nil {
+				pterm.Error.Printf("Failed to save identity: %v\n", err)
+				return
+			}
+
+			pterm.Success.Printf("Identity saved! Drops will now be signed as @%s via %s\n", username, provider)
+		},
+	}
+
+	identityCmd.AddCommand(setCmd)
+	return identityCmd
+}
 
 func createVersionCommand() *cobra.Command {
 	return &cobra.Command{

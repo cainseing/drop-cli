@@ -5,34 +5,28 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/cainseing/drop-cli/internal/config"
 	"github.com/pterm/pterm"
 )
 
 func CheckForUpdates(currentVersion string, force bool) bool {
-	// Pipe Detection
+	// Pipe Detection - don't show update prompts if piping output
 	fi, _ := os.Stdout.Stat()
 	if (fi.Mode() & os.ModeCharDevice) == 0 {
 		return false
 	}
 
-	home, err := os.UserHomeDir()
-	if err != nil {
+	cfg := config.LoadUserConfig()
+
+	if !force && time.Since(cfg.UpdateCheck) < 24*time.Hour {
 		return false
 	}
-	stateFile := filepath.Join(home, ".drop_update_check")
 
-	// Rate Limiting (24-hour check)
-	if info, err := os.Stat(stateFile); !force && err == nil {
-		if time.Since(info.ModTime()) < 24*time.Hour {
-			return false
-		}
-	}
-
-	_ = os.WriteFile(stateFile, []byte(time.Now().String()), 0644)
+	cfg.UpdateCheck = time.Now()
+	_ = config.SaveUserConfig(cfg)
 
 	client := &http.Client{Timeout: 3 * time.Second}
 	resp, err := client.Get("https://api.github.com/repos/cainseing/drop-cli/releases/latest")
@@ -56,7 +50,6 @@ func CheckForUpdates(currentVersion string, force bool) bool {
 	}
 
 	message := ""
-
 	if isBrewInstall() {
 		message = fmt.Sprintf("Update Available: %s -> %s\nRun %s to update.",
 			pterm.Gray(currentVersion),
@@ -90,5 +83,5 @@ func isBrewInstall() bool {
 		return false
 	}
 
-	return strings.Contains(exe, "/homebrew/") || strings.Contains(exe, "/linuxbrew/") || strings.Contains(exe, "/usr/local/bin/")
+	return strings.Contains(exe, "/homebrew/") || strings.Contains(exe, "/linuxbrew/") || strings.Contains(exe, "/usr/local/Cellar/")
 }
