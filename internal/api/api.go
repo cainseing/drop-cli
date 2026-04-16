@@ -82,8 +82,6 @@ func getBlob(id string) (*GetDropResponse, error) {
 		SetResult(&result).
 		Get("/blob/" + id)
 
-	print(result.Provider)
-
 	if resp.StatusCode() == 404 {
 		return nil, fmt.Errorf("drop was not found")
 	}

@@ -13,9 +13,10 @@ import (
 )
 
 var (
-	ttl    int
-	reads  int
-	signed bool
+	ttl        int
+	reads      int
+	signed     bool
+	shouldCopy bool
 )
 
 func CreateRootCmd() *cobra.Command {
@@ -41,13 +42,14 @@ func CreateRootCmd() *cobra.Command {
 				return
 			}
 
-			api.HandleCreateCommand(input, ttl, reads, signed)
+			api.HandleCreateCommand(input, ttl, reads, signed, shouldCopy)
 		},
 	}
 
 	rootCmd.Flags().IntVarP(&ttl, "ttl", "t", 5, "Expiry in minutes")
 	rootCmd.Flags().IntVarP(&reads, "reads", "r", 1, "Maximum number of times drop can be read")
 	rootCmd.Flags().BoolVarP(&signed, "signed", "s", false, "Sign the drop")
+	rootCmd.Flags().BoolVarP(&shouldCopy, "copy", "c", false, "Copy token to clipboard")
 
 	rootCmd.AddCommand(
 		createGetCmd(),

@@ -5,6 +5,8 @@ go 1.26
 toolchain go1.26.0
 
 require (
+	github.com/atotto/clipboard v0.1.4
+	github.com/charmbracelet/x/term v0.2.1
 	github.com/go-resty/resty/v2 v2.17.1
 	github.com/spf13/cobra v1.10.2
 )
@@ -17,7 +19,6 @@ require (
 	github.com/charmbracelet/colorprofile v0.2.3-0.20250311203215-f60798e515dc // indirect
 	github.com/charmbracelet/x/ansi v0.8.0 // indirect
 	github.com/charmbracelet/x/cellbuf v0.0.13-0.20250311204145-2c3ea96c31dd // indirect
-	github.com/charmbracelet/x/term v0.2.1 // indirect
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/containerd/console v1.0.5 // indirect
 	github.com/gookit/color v1.6.0 // indirect

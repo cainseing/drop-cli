@@ -7,6 +7,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/atotto/clipboard"
+
 	"github.com/cainseing/drop-cli/internal/config"
 	"github.com/cainseing/drop-cli/internal/crypto"
 	"github.com/cainseing/drop-cli/internal/display"
@@ -14,7 +16,7 @@ import (
 	"github.com/cainseing/drop-cli/internal/signer"
 )
 
-func HandleCreateCommand(input []byte, ttl int, reads int, signed bool) {
+func HandleCreateCommand(input []byte, ttl int, reads int, signed bool, shouldCopy bool) {
 	if ttl > config.MaxTTLMinutes {
 		display.PrintError(fmt.Sprintf("TTL exceeds maximum allowed limit (%d days)", config.MaxTTLMinutes/1440), nil)
 		return
@@ -75,11 +77,18 @@ func HandleCreateCommand(input []byte, ttl int, reads int, signed bool) {
 
 	if signed {
 		fmt.Println()
-		display.PrintProperty("STATUS", display.StatusVerified.Render("Signed"))
-		display.PrintProperty("SENDER", fmt.Sprintf("%s@%s", cfg.Provider, cfg.Username))
+		display.PrintProperty("STATUS", display.StatusVerified.Render(fmt.Sprintf("Signed via %s", cfg.Provider)))
+		display.PrintProperty("SENDER", fmt.Sprintf("%s", cfg.Username))
 	}
 
-	fmt.Printf("%s\n\n", display.Secret.Render(token))
+	if shouldCopy {
+		err := clipboard.WriteAll(token)
+		if err != nil {
+			display.PrintError("Could not copy token automatically", err)
+		}
+	}
+
+	fmt.Printf("%s\n\n", display.Token.Render(token))
 }
 
 func HandleGetCommand(token string) {
@@ -114,23 +123,10 @@ func HandleGetCommand(token string) {
 	}
 
 	response, err := getBlob(id)
-	fmt.Print("\r\033[K")
 
 	if err != nil {
 		display.PrintError("", err)
 		return
-	}
-
-	if response.Signature != "" {
-		err := signer.VerifySignature(response.Blob, response.Signature, response.Sender, response.Provider)
-		if err != nil {
-			display.PrintError("Signature verification failed. The content may have been tampered with.", err)
-			return
-		}
-
-		fmt.Println()
-		display.PrintProperty("STATUS", display.StatusVerified.Render("Verified"))
-		display.PrintProperty("SENDER", fmt.Sprintf("%s@%s", response.Provider, response.Sender))
 	}
 
 	ciphertext, err := base64.StdEncoding.DecodeString(response.Blob)
@@ -145,15 +141,25 @@ func HandleGetCommand(token string) {
 		return
 	}
 
-	stat, _ := os.Stdout.Stat()
-	isTerminal := (stat.Mode() & os.ModeCharDevice) != 0
-
-	if !isTerminal {
+	fi, _ := os.Stdout.Stat()
+	if (fi.Mode() & os.ModeCharDevice) == 0 {
 		fmt.Fprint(os.Stdout, string(plaintext))
 		return
 	}
 
-	fmt.Println(display.Secret.Render(string(plaintext)))
+	fmt.Print("\r\033[K")
+
+	if response.Signature != "" {
+		err := signer.VerifySignature(response.Blob, response.Signature, response.Sender, response.Provider)
+		if err != nil {
+			display.PrintError("Signature verification failed. The content may have been tampered with.", err)
+			return
+		}
+
+		fmt.Fprintln(os.Stderr)
+		display.PrintPropertyToStderr("STATUS", display.StatusVerified.Render(fmt.Sprintf("Verified via %s", response.Provider)))
+		display.PrintPropertyToStderr("SENDER", fmt.Sprintf("%s", response.Sender))
+	}
 
 	if response.RemainingReads > 0 {
 		label := "reads"
@@ -161,9 +167,12 @@ func HandleGetCommand(token string) {
 			label = "read"
 		}
 
+		fmt.Fprintln(os.Stderr)
 		statusText := fmt.Sprintf("%d %s remaining", response.RemainingReads, label)
-		fmt.Printf("\n%s\n", display.DimText.PaddingLeft(2).Render(statusText))
+		display.PrintPropertyToStderr("READS", statusText)
 	}
+
+	fmt.Println(display.Secret.Render(string(plaintext)))
 }
 
 func HandlePurgeCommand(token string) {

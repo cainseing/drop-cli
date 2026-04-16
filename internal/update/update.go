@@ -13,7 +13,6 @@ import (
 )
 
 func CheckForUpdates(currentVersion string, force bool) bool {
-	// Pipe Detection - don't show update prompts if piping output
 	fi, _ := os.Stdout.Stat()
 	if (fi.Mode() & os.ModeCharDevice) == 0 {
 		return false

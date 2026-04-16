@@ -6,6 +6,7 @@ import (
 	"unicode"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/term"
 )
 
 var (
@@ -15,28 +16,41 @@ var (
 	danger  = lipgloss.Color("#BF616A")
 	dim     = lipgloss.Color("#666666")
 
-	// Structural Styles
 	LabelStyle = lipgloss.NewStyle().Foreground(dim).Width(12)
 	ValueStyle = lipgloss.NewStyle().Foreground(accent).Bold(true)
 	DimText    = lipgloss.NewStyle().Foreground(dim)
 
-	// Secret Box
+	CopyStyle = lipgloss.NewStyle().Foreground(accent).Italic(true)
+
 	Secret = lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(subtle).
-		Padding(0, 2).
+		Foreground(subtle).
+		Padding(0, 0).
 		MarginTop(1).
 		Foreground(lipgloss.Color("#FFFFFF"))
 
-	// Semantic Styles
+	Token = lipgloss.NewStyle().
+		Foreground(subtle).
+		Padding(0, 0).
+		MarginTop(1).
+		Foreground(lipgloss.Color("#FFFFFF"))
+
 	StatusVerified = lipgloss.NewStyle().Foreground(success).Bold(true)
 	StatusError    = lipgloss.NewStyle().Foreground(danger).Bold(true)
 )
+
+func PrintPropertyToStderr(label string, value string) {
+	if label == "" {
+		return
+	}
+
+	fmt.Fprintf(os.Stderr, "%s %s\n", LabelStyle.Render(label), value)
+}
 
 func PrintProperty(label string, value string) {
 	if label == "" {
 		return
 	}
+
 	fmt.Printf("%s %s\n", LabelStyle.Render(label), value)
 }
 
@@ -75,6 +89,14 @@ func PrintError(message string, err error) {
 	if context != "" {
 		fmt.Fprintf(os.Stderr, "%s\n", DimText.Render(ucFirst(context)))
 	}
+}
+
+func getTerminalWidth() int {
+	width, _, err := term.GetSize(os.Stdout.Fd())
+	if err != nil || width <= 0 {
+		return 80
+	}
+	return width
 }
 
 func ucFirst(s string) string {
