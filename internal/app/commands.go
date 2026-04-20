@@ -7,6 +7,7 @@ import (
 
 	"github.com/cainseing/drop-cli/internal/api"
 	"github.com/cainseing/drop-cli/internal/config"
+	"github.com/cainseing/drop-cli/internal/display"
 	"github.com/cainseing/drop-cli/internal/update"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
@@ -101,7 +102,6 @@ func createIdentityCmd() *cobra.Command {
 				return
 			}
 
-			// Load existing config to preserve other fields (like LastUpdateCheck)
 			cfg := config.LoadUserConfig()
 			cfg.Username = username
 			cfg.Provider = provider
@@ -125,20 +125,14 @@ func createVersionCommand() *cobra.Command {
 		Short: "View running version",
 		Args:  cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
-			result := update.CheckForUpdates(config.Version, true)
-
-			if result {
+			if update.CheckForUpdates(config.Version, true) {
 				return
 			}
 
-			message := fmt.Sprintf("%s", pterm.Gray(config.Version))
-
-			fmt.Println()
-			pterm.DefaultBox.
-				WithTitle(pterm.LightYellow(" Version ")).
-				WithBoxStyle(pterm.NewStyle(pterm.FgLightYellow)).
-				Println(message)
-			fmt.Println()
+			// Standardized property output
+			fmt.Fprintln(os.Stderr)
+			display.PrintPropertyToStderr("VERSION", config.Version)
+			fmt.Fprintln(os.Stderr)
 		},
 	}
 }
