@@ -12,6 +12,8 @@ import (
 	"github.com/pterm/pterm"
 )
 
+var getExecutable = os.Executable
+
 func CheckForUpdates(currentVersion string, force bool) bool {
 	fi, _ := os.Stdout.Stat()
 	if (fi.Mode() & os.ModeCharDevice) == 0 {
@@ -77,7 +79,7 @@ func sanitizeVersion(v string) string {
 }
 
 func isBrewInstall() bool {
-	exe, err := os.Executable()
+	exe, err := getExecutable()
 	if err != nil {
 		return false
 	}

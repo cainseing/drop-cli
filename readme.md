@@ -85,6 +85,7 @@ Automatically detects your platform and installs the correct binary:
 |------|--------------|---------------------------------|---------|
 | `-t` | `--ttl`      | Expiry time in minutes          | `5`     |
 | `-r` | `--reads`    | Maximum number of allowed reads | `1`     |
+| `-s` | `--signed`   | Sign the drop with SSH key      | `false` |
 
 Example:
 

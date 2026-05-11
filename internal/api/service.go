@@ -14,48 +14,70 @@ import (
 	"github.com/cainseing/drop-cli/internal/display"
 	"github.com/cainseing/drop-cli/internal/identity"
 	"github.com/cainseing/drop-cli/internal/signer"
+	"golang.org/x/crypto/ssh"
 )
+
+var printError = display.PrintError
+var loadUserConfig = config.LoadUserConfig
+var encrypt = crypto.Encrypt
+
+type signerInterface interface {
+	Sign(payload []byte, authorizedKeys []ssh.PublicKey) ([]byte, error)
+}
+
+var newSigner = func() signerInterface { return signer.New() }
+var fetchKeys = identity.FetchKeys
+var postBlobFunc = postBlob
+var writeClipboard = clipboard.WriteAll
+var stdoutStat = func() (os.FileInfo, error) { return os.Stdout.Stat() }
+var printProperty = display.PrintProperty
+var printPropertyToStderr = display.PrintPropertyToStderr
+var printSuccess = display.PrintSuccess
+var verifySignature = signer.VerifySignature
+var decrypt = crypto.Decrypt
+var getBlobFunc = getBlob
+var purgeBlobFunc = purgeBlob
 
 func HandleCreateCommand(input []byte, ttl int, reads int, signed bool, shouldCopy bool) {
 	if ttl > config.MaxTTLMinutes {
-		display.PrintError(fmt.Sprintf("TTL exceeds maximum allowed limit (%d days)", config.MaxTTLMinutes/1440), nil)
+		printError(fmt.Sprintf("TTL exceeds maximum allowed limit (%d days)", config.MaxTTLMinutes/1440), nil)
 		return
 	}
 
 	if ttl <= 0 {
-		display.PrintError("TTL must be at least 1 minute", nil)
+		printError("TTL must be at least 1 minute", nil)
 		return
 	}
 
 	if len(input) > config.MaxBlobSize {
-		display.PrintError(fmt.Sprintf("Payload too large (Max: %dKB)", config.MaxBlobSize/1024), nil)
+		printError(fmt.Sprintf("Payload too large (Max: %dKB)", config.MaxBlobSize/1024), nil)
 		return
 	}
 
-	cfg := config.LoadUserConfig()
-	ciphertext, key, err := crypto.Encrypt(input)
+	cfg := loadUserConfig()
+	ciphertext, key, err := encrypt(input)
 	if err != nil {
-		display.PrintError("Encryption Error", err)
+		printError("Encryption Error", err)
 		return
 	}
 
 	var signature []byte
 	if signed {
 		if cfg.Username == "" || cfg.Provider == "" {
-			display.PrintError("You need to configure your identity before signing a drop", nil)
+			printError("You need to configure your identity before signing a drop", nil)
 			return
 		}
 
-		s := signer.New()
+		s := newSigner()
 
-		authKeys, err := identity.FetchKeys(identity.Provider(cfg.Provider), cfg.Username)
+		authKeys, err := fetchKeys(identity.Provider(cfg.Provider), cfg.Username)
 		if err != nil {
 			return
 		}
 
 		signature, err = s.Sign(ciphertext, authKeys)
 		if err != nil {
-			display.PrintError("Signing Error", err)
+			printError("Signing Error", err)
 			return
 		}
 	}
@@ -63,12 +85,12 @@ func HandleCreateCommand(input []byte, ttl int, reads int, signed bool, shouldCo
 	encodedBlob := base64.StdEncoding.EncodeToString(ciphertext)
 	encodedSignature := base64.StdEncoding.EncodeToString(signature)
 
-	id, err := postBlob(encodedBlob, ttl, reads, encodedSignature, cfg.Username, cfg.Provider)
+	id, err := postBlobFunc(encodedBlob, ttl, reads, encodedSignature, cfg.Username, cfg.Provider)
 
 	fmt.Print("\r\033[K")
 
 	if err != nil {
-		display.PrintError("API Error", err)
+		printError("API Error", err)
 		return
 	}
 
@@ -77,14 +99,14 @@ func HandleCreateCommand(input []byte, ttl int, reads int, signed bool, shouldCo
 
 	if signed {
 		fmt.Println()
-		display.PrintProperty("STATUS", display.StatusVerified.Render(fmt.Sprintf("Signed via %s", cfg.Provider)))
-		display.PrintProperty("SENDER", fmt.Sprintf("%s", cfg.Username))
+		printProperty("STATUS", display.StatusVerified.Render(fmt.Sprintf("Signed via %s", cfg.Provider)))
+		printProperty("SENDER", fmt.Sprintf("%s", cfg.Username))
 	}
 
 	if shouldCopy {
-		err := clipboard.WriteAll(token)
+		err := writeClipboard(token)
 		if err != nil {
-			display.PrintError("Could not copy token automatically", err)
+			printError("Could not copy token automatically", err)
 		}
 	}
 
@@ -95,13 +117,13 @@ func HandleGetCommand(token string) {
 	token = strings.TrimPrefix(token, "drop_")
 	decoded, err := base64.RawURLEncoding.DecodeString(token)
 	if err != nil {
-		display.PrintError("Token provided is not valid", nil)
+		printError("Token provided is not valid", nil)
 		return
 	}
 	parts := strings.Split(string(decoded), ".")
 
 	if len(parts) != 3 {
-		display.PrintError("Token provided is not valid", nil)
+		printError("Token provided is not valid", nil)
 		return
 	}
 
@@ -109,39 +131,39 @@ func HandleGetCommand(token string) {
 
 	if config.ProtocolVersion != usedProtocol {
 		if config.ProtocolVersion > usedProtocol {
-			display.PrintError("This Drop is incompatible because the sender's version is out of date. Please ask them to update their Drop CLI and generate a new Drop.", nil)
+			printError("This Drop is incompatible because the sender's version is out of date. Please ask them to update their Drop CLI and generate a new Drop.", nil)
 			return
 		}
-		display.PrintError("To decrypt this Drop, an update is required. Please install the latest version of the Drop CLI.", nil)
+		printError("To decrypt this Drop, an update is required. Please install the latest version of the Drop CLI.", nil)
 		return
 	}
 
 	key, err := hex.DecodeString(keyHex)
 	if err != nil {
-		display.PrintError("Invalid encryption key in token", err)
+		printError("Invalid encryption key in token", err)
 		return
 	}
 
-	response, err := getBlob(id)
+	response, err := getBlobFunc(id)
 
 	if err != nil {
-		display.PrintError("", err)
+		printError("", err)
 		return
 	}
 
 	ciphertext, err := base64.StdEncoding.DecodeString(response.Blob)
 	if err != nil {
-		display.PrintError("Failed to decode encrypted payload", err)
+		printError("Failed to decode encrypted payload", err)
 		return
 	}
 
-	plaintext, err := crypto.Decrypt(ciphertext, key)
+	plaintext, err := decrypt(ciphertext, key)
 	if err != nil {
-		display.PrintError("", err)
+		printError("", err)
 		return
 	}
 
-	fi, _ := os.Stdout.Stat()
+	fi, _ := stdoutStat()
 	if (fi.Mode() & os.ModeCharDevice) == 0 {
 		fmt.Fprint(os.Stdout, string(plaintext))
 		return
@@ -150,15 +172,15 @@ func HandleGetCommand(token string) {
 	fmt.Print("\r\033[K")
 
 	if response.Signature != "" {
-		err := signer.VerifySignature(response.Blob, response.Signature, response.Sender, response.Provider)
+		err := verifySignature(response.Blob, response.Signature, response.Sender, response.Provider)
 		if err != nil {
-			display.PrintError("Signature verification failed. The content may have been tampered with.", err)
+			printError("Signature verification failed. The content may have been tampered with.", err)
 			return
 		}
 
 		fmt.Fprintln(os.Stderr)
-		display.PrintPropertyToStderr("STATUS", display.StatusVerified.Render(fmt.Sprintf("Verified via %s", response.Provider)))
-		display.PrintPropertyToStderr("SENDER", fmt.Sprintf("%s", response.Sender))
+		printPropertyToStderr("STATUS", display.StatusVerified.Render(fmt.Sprintf("Verified via %s", response.Provider)))
+		printPropertyToStderr("SENDER", fmt.Sprintf("%s", response.Sender))
 	}
 
 	if response.RemainingReads > 0 {
@@ -169,7 +191,7 @@ func HandleGetCommand(token string) {
 
 		fmt.Fprintln(os.Stderr)
 		statusText := fmt.Sprintf("%d %s remaining", response.RemainingReads, label)
-		display.PrintPropertyToStderr("READS", statusText)
+		printPropertyToStderr("READS", statusText)
 	}
 
 	fmt.Println(display.Secret.Render(string(plaintext)))
@@ -180,29 +202,29 @@ func HandlePurgeCommand(token string) {
 	decoded, err := base64.RawURLEncoding.DecodeString(token)
 
 	if err != nil {
-		display.PrintError("Token provided is not valid", nil)
+		printError("Token provided is not valid", nil)
 		return
 	}
 
 	parts := strings.Split(string(decoded), ".")
 	if len(parts) != 3 {
-		display.PrintError("Token provided is not valid", nil)
+		printError("Token provided is not valid", nil)
 		return
 	}
 
 	id := parts[1]
 
-	result, err := purgeBlob(id)
+	result, err := purgeBlobFunc(id)
 
 	if err != nil {
-		display.PrintError("", err)
+		printError("", err)
 		return
 	}
 
 	if !result {
-		display.PrintError("Unknown error occurred while trying to purge", nil)
+		printError("Unknown error occurred while trying to purge", nil)
 		return
 	}
 
-	display.PrintSuccess("Purged", "")
+	printSuccess("Purged", "")
 }

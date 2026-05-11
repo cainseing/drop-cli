@@ -17,7 +17,7 @@ install: build
 	@echo "✅ Done! Try running: drop --help"
 
 # Build for multiple platforms (Cross-Compilation)
-release:
+release: test
 	@echo "🌎 Building for multiple platforms..."
 	GOOS=linux GOARCH=amd64 go build -o bin/$(BINARY_NAME)-linux-amd64 ./cmd/drop
 	GOOS=linux GOARCH=arm64 go build -o bin/$(BINARY_NAME)-linux-arm64 ./cmd/drop
@@ -34,3 +34,9 @@ clean:
 test:
 	@echo "🧪 Running tests..."
 	go test ./...
+
+test-coverage:
+	@echo "🧪 Running tests with coverage..."
+	go test -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out -o coverage.html
+	@echo "📊 Coverage report generated: coverage.html"

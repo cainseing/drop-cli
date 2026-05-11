@@ -24,7 +24,7 @@ func Decrypt(ciphertext []byte, key []byte) ([]byte, error) {
 
 	nonceSize := gcm.NonceSize()
 	if len(ciphertext) < nonceSize {
-		return nil, fmt.Errorf("")
+		return nil, fmt.Errorf("Size mismatch")
 	}
 
 	nonce, sealed := ciphertext[:nonceSize], ciphertext[nonceSize:]
@@ -54,7 +54,9 @@ func Encrypt(plaintext []byte) ([]byte, []byte, error) {
 
 	if len(envelope) < MIN_SIZE {
 		padding := make([]byte, MIN_SIZE-len(envelope))
-		rand.Read(padding)
+		if _, err := io.ReadFull(rand.Reader, padding); err != nil {
+			return nil, nil, err
+		}
 		envelope = append(envelope, padding...)
 	}
 

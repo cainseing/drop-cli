@@ -4,46 +4,21 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"net"
 	"os"
 	"path/filepath"
 
 	"github.com/cainseing/drop-cli/internal/identity"
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/agent"
 )
 
-type Signer struct {
-	agent agent.ExtendedAgent
-}
+type Signer struct{}
 
 func New() *Signer {
-	socket := os.Getenv("SSH_AUTH_SOCK")
-	if socket == "" {
-		return &Signer{agent: nil}
-	}
-
-	conn, err := net.Dial("unix", socket)
-	if err != nil {
-		return &Signer{agent: nil}
-	}
-
-	return &Signer{
-		agent: agent.NewClient(conn),
-	}
+	return &Signer{}
 }
 
 func (s *Signer) Sign(payload []byte, authorizedKeys []ssh.PublicKey) ([]byte, error) {
-	sig, err := s.signFromFilesystem(payload, authorizedKeys)
-	if err == nil {
-		return sig, nil
-	}
-
-	if s.agent != nil {
-		return s.signFromAgent(payload, authorizedKeys)
-	}
-
-	return nil, fmt.Errorf("no matching local keys found and ssh-agent is unavailable")
+	return s.signWithKey(payload, authorizedKeys)
 }
 
 func VerifySignature(blobB64, signatureB64, sender, provider string) error {
@@ -77,7 +52,7 @@ func VerifySignature(blobB64, signatureB64, sender, provider string) error {
 	return fmt.Errorf("no matching key found for signature")
 }
 
-func (s *Signer) signFromFilesystem(payload []byte, authorizedKeys []ssh.PublicKey) ([]byte, error) {
+func (s *Signer) signWithKey(payload []byte, authorizedKeys []ssh.PublicKey) ([]byte, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return nil, err
@@ -113,33 +88,6 @@ func (s *Signer) signFromFilesystem(payload []byte, authorizedKeys []ssh.PublicK
 	}
 
 	return nil, fmt.Errorf("no matching local files")
-}
-
-func (s *Signer) signFromAgent(payload []byte, authorizedKeys []ssh.PublicKey) ([]byte, error) {
-	agentKeys, err := s.agent.List()
-	if err != nil {
-		return nil, err
-	}
-
-	for _, aKey := range agentKeys {
-		parsedAgentKey, err := ssh.ParsePublicKey(aKey.Marshal())
-		if err != nil {
-			continue
-		}
-
-		if !s.isKeyAuthorized(parsedAgentKey, authorizedKeys) {
-			continue
-		}
-
-		sig, err := s.agent.Sign(parsedAgentKey, payload)
-		if err != nil {
-			continue
-		}
-
-		return sig.Blob, nil
-	}
-
-	return nil, fmt.Errorf("no matching keys found in ssh-agent")
 }
 
 func (s *Signer) isKeyAuthorized(key ssh.PublicKey, authorizedKeys []ssh.PublicKey) bool {

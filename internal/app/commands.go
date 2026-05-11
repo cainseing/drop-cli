@@ -129,7 +129,6 @@ func createVersionCommand() *cobra.Command {
 				return
 			}
 
-			// Standardized property output
 			fmt.Fprintln(os.Stderr)
 			display.PrintPropertyToStderr("VERSION", config.Version)
 			fmt.Fprintln(os.Stderr)

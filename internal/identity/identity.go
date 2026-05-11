@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -27,6 +28,10 @@ func FetchKeys(provider Provider, username string) ([]ssh.PublicKey, error) {
 		return nil, fmt.Errorf("username cannot be empty")
 	}
 
+	if !isValidUsername(username) {
+		return nil, fmt.Errorf("invalid username: contains disallowed characters")
+	}
+
 	url, err := buildURL(provider, username)
 	if err != nil {
 		return nil, err
@@ -47,6 +52,12 @@ func FetchKeys(provider Provider, username string) ([]ssh.PublicKey, error) {
 	}
 
 	return parseKeys(resp.Body)
+}
+
+func isValidUsername(username string) bool {
+	// Allow alphanumeric, dash, and underscore only
+	pattern := regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
+	return pattern.MatchString(username)
 }
 
 func buildURL(provider Provider, username string) (string, error) {
