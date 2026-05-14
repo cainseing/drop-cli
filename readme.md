@@ -1,5 +1,8 @@
 # Drop CLI - Secure, zero-knowledge, secret sharing CLI
 
+[![Tests](https://github.com/cainseing/drop-cli/actions/workflows/tests.yml/badge.svg?branch=development)](https://github.com/cainseing/drop-cli/actions/workflows/tests.yml)
+[![Go Version](https://img.shields.io/badge/go-1.26-blue)](https://golang.org/dl/)
+
 **Drop CLI** is a command-line tool for securely sharing sensitive data—such as API keys, tokens, and credentials—through the [Drop API](https://github.com/cainseing/drop-api). It uses end-to-end encryption to ensure secrets remain private and accessible only to intended recipients.
 
 Ideal for development teams that need a fast, secure way to exchange confidential information.
