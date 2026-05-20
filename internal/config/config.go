@@ -26,7 +26,7 @@ func GetConfigPath() string {
 
 func LoadUserConfig() *UserConfig {
 	path := GetConfigPath()
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) // #nosec G304 -- path is a fixed location under user home dir
 	if err != nil {
 		return &UserConfig{}
 	}
@@ -41,12 +41,14 @@ func LoadUserConfig() *UserConfig {
 
 func SaveUserConfig(cfg *UserConfig) error {
 	path := GetConfigPath()
-	os.MkdirAll(filepath.Dir(path), 0755)
+	if err := os.MkdirAll(filepath.Dir(path), 0750); err != nil {
+		return err
+	}
 
 	data, err := json.MarshalIndent(cfg, "", "  ")
 	if err != nil {
 		return err
 	}
 
-	return os.WriteFile(path, data, 0644)
+	return os.WriteFile(path, data, 0600)
 }

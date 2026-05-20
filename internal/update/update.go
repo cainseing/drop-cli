@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -46,7 +47,7 @@ func CheckForUpdates(currentVersion string, force bool) bool {
 	latest := sanitizeVersion(release.TagName)
 	current := sanitizeVersion(currentVersion)
 
-	if latest <= current {
+	if compareVersions(latest, current) <= 0 {
 		return false
 	}
 
@@ -76,6 +77,27 @@ func CheckForUpdates(currentVersion string, force bool) bool {
 func sanitizeVersion(v string) string {
 	v = strings.TrimPrefix(v, "v")
 	return strings.Split(v, "-")[0]
+}
+
+func compareVersions(a, b string) int {
+	aParts := strings.Split(a, ".")
+	bParts := strings.Split(b, ".")
+	for i := range max(len(aParts), len(bParts)) {
+		var aVal, bVal int
+		if i < len(aParts) {
+			aVal, _ = strconv.Atoi(aParts[i])
+		}
+		if i < len(bParts) {
+			bVal, _ = strconv.Atoi(bParts[i])
+		}
+		if aVal != bVal {
+			if aVal > bVal {
+				return 1
+			}
+			return -1
+		}
+	}
+	return 0
 }
 
 func isBrewInstall() bool {

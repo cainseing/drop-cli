@@ -27,16 +27,24 @@ release: test
 # 	GOOS=windows GOARCH=arm64 go build -o bin/$(BINARY_NAME)-windows-arm64.exe .
 
 clean:
-	@echo "🧹 Cleaning up..."
+	@echo "Cleaning up..."
 	@rm -f $(BINARY_NAME)
 	@rm -rf bin/
 
 test:
-	@echo "🧪 Running tests..."
+	@echo "Running tests..."
 	go test ./...
 
 test-coverage:
-	@echo "🧪 Running tests with coverage..."
+	@echo "Running tests with coverage..."
 	go test -coverprofile=coverage.out ./...
 	go tool cover -html=coverage.out -o coverage.html
 	@echo "📊 Coverage report generated: coverage.html"
+
+lint:
+	@echo "Running linter..."
+	golangci-lint run
+
+sec:
+	@echo "Running gosec..."
+	gosec ./...

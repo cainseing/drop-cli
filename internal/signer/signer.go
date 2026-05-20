@@ -65,7 +65,7 @@ func (s *Signer) signWithKey(payload []byte, authorizedKeys []ssh.PublicKey) ([]
 	}
 
 	for _, path := range paths {
-		keyBytes, err := os.ReadFile(path)
+		keyBytes, err := os.ReadFile(path) // #nosec G304 -- path is constructed from hardcoded SSH key names under home dir
 		if err != nil {
 			continue
 		}

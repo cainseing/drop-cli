@@ -2,10 +2,13 @@ package api
 
 import (
 	"fmt"
+	"regexp"
 
 	"github.com/cainseing/drop-cli/internal/config"
 	"github.com/go-resty/resty/v2"
 )
+
+var validID = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
 type ErrorResponse struct {
 	Code      int    `json:"code"`
@@ -74,6 +77,10 @@ func postBlob(blob string, ttl int, reads int, sig string, sender string, provid
 }
 
 func getBlob(id string) (*GetDropResponse, error) {
+	if !validID.MatchString(id) {
+		return nil, fmt.Errorf("invalid drop ID format")
+	}
+
 	client := newClient()
 
 	result := GetDropResponse{}
@@ -94,6 +101,10 @@ func getBlob(id string) (*GetDropResponse, error) {
 }
 
 func purgeBlob(id string) (bool, error) {
+	if !validID.MatchString(id) {
+		return false, fmt.Errorf("invalid drop ID format")
+	}
+
 	client := newClient()
 
 	resp, err := client.R().

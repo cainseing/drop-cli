@@ -7,6 +7,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"math"
 )
 
 const MIN_SIZE = 128
@@ -34,7 +35,7 @@ func Decrypt(ciphertext []byte, key []byte) ([]byte, error) {
 	}
 
 	if len(envelope) < 4 {
-		return nil, fmt.Errorf("Invalid envolope")
+		return nil, fmt.Errorf("Invalid envelope")
 	}
 
 	actualLen := binary.BigEndian.Uint32(envelope[:4])
@@ -47,7 +48,10 @@ func Decrypt(ciphertext []byte, key []byte) ([]byte, error) {
 
 func Encrypt(plaintext []byte) ([]byte, []byte, error) {
 	// Envelope: [Length][Data][Padding]
-	actualLen := uint32(len(plaintext))
+	if len(plaintext) > math.MaxUint32 {
+		return nil, nil, fmt.Errorf("plaintext too large")
+	}
+	actualLen := uint32(len(plaintext)) // #nosec G115 -- bounds checked above
 	envelope := make([]byte, 4)
 	binary.BigEndian.PutUint32(envelope, actualLen)
 	envelope = append(envelope, plaintext...)

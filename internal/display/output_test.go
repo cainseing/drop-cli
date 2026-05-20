@@ -51,7 +51,7 @@ func TestPrintError(t *testing.T) {
 
 		w.Close()
 		var buf bytes.Buffer
-		buf.ReadFrom(r)
+		_, _ = buf.ReadFrom(r)
 		output := buf.String()
 		os.Stderr = oldStderr
 
@@ -73,7 +73,7 @@ func TestPrintProperty(t *testing.T) {
 
 	w.Close()
 	var buf bytes.Buffer
-	buf.ReadFrom(r)
+	_, _ = buf.ReadFrom(r)
 	output := buf.String()
 	os.Stdout = oldStdout
 
@@ -92,7 +92,7 @@ func TestPrintPropertyToStderr(t *testing.T) {
 
 	w.Close()
 	var buf bytes.Buffer
-	buf.ReadFrom(r)
+	_, _ = buf.ReadFrom(r)
 	output := buf.String()
 	os.Stderr = oldStderr
 
@@ -111,7 +111,7 @@ func TestPrintSuccess(t *testing.T) {
 
 	w.Close()
 	var buf bytes.Buffer
-	buf.ReadFrom(r)
+	_, _ = buf.ReadFrom(r)
 	output := buf.String()
 	os.Stdout = oldStdout
 
@@ -130,7 +130,7 @@ func TestPrintInfo(t *testing.T) {
 
 	w.Close()
 	var buf bytes.Buffer
-	buf.ReadFrom(r)
+	_, _ = buf.ReadFrom(r)
 	output := buf.String()
 	os.Stdout = oldStdout
 
@@ -149,7 +149,7 @@ func TestPrintProperty_EmptyLabel(t *testing.T) {
 
 	w.Close()
 	var buf bytes.Buffer
-	buf.ReadFrom(r)
+	_, _ = buf.ReadFrom(r)
 	output := buf.String()
 	os.Stdout = oldStdout
 

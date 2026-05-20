@@ -49,6 +49,11 @@ func HandleCreateCommand(input []byte, ttl int, reads int, signed bool, shouldCo
 		return
 	}
 
+	if reads < 1 {
+		printError("Reads must be at least 1", nil)
+		return
+	}
+
 	if len(input) > config.MaxBlobSize {
 		printError(fmt.Sprintf("Payload too large (Max: %dKB)", config.MaxBlobSize/1024), nil)
 		return
@@ -72,6 +77,7 @@ func HandleCreateCommand(input []byte, ttl int, reads int, signed bool, shouldCo
 
 		authKeys, err := fetchKeys(identity.Provider(cfg.Provider), cfg.Username)
 		if err != nil {
+			printError("Could not fetch signing keys", err)
 			return
 		}
 
@@ -100,7 +106,7 @@ func HandleCreateCommand(input []byte, ttl int, reads int, signed bool, shouldCo
 	if signed {
 		fmt.Println()
 		printProperty("STATUS", display.StatusVerified.Render(fmt.Sprintf("Signed via %s", cfg.Provider)))
-		printProperty("SENDER", fmt.Sprintf("%s", cfg.Username))
+		printProperty("SENDER", cfg.Username)
 	}
 
 	if shouldCopy {
@@ -163,8 +169,8 @@ func HandleGetCommand(token string) {
 		return
 	}
 
-	fi, _ := stdoutStat()
-	if (fi.Mode() & os.ModeCharDevice) == 0 {
+	fi, err := stdoutStat()
+	if err == nil && (fi.Mode() & os.ModeCharDevice) == 0 {
 		fmt.Fprint(os.Stdout, string(plaintext))
 		return
 	}
@@ -180,7 +186,7 @@ func HandleGetCommand(token string) {
 
 		fmt.Fprintln(os.Stderr)
 		printPropertyToStderr("STATUS", display.StatusVerified.Render(fmt.Sprintf("Verified via %s", response.Provider)))
-		printPropertyToStderr("SENDER", fmt.Sprintf("%s", response.Sender))
+		printPropertyToStderr("SENDER", response.Sender)
 	}
 
 	if response.RemainingReads > 0 {

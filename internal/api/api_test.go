@@ -38,7 +38,7 @@ func TestPostBlob(t *testing.T) {
 
 		// Return success response
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"id": "test-id"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"id": "test-id"})
 	}))
 	defer server.Close()
 
@@ -62,7 +62,7 @@ func TestPostBlob_Error(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(ErrorResponse{
+		_ = json.NewEncoder(w).Encode(ErrorResponse{
 			Code:    400,
 			Message: "Invalid request",
 		})
@@ -97,7 +97,7 @@ func TestGetBlob(t *testing.T) {
 			Provider:       "provider",
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 

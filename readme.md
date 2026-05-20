@@ -1,6 +1,6 @@
 # Drop CLI - Secure, zero-knowledge, secret sharing CLI
 
-[![Tests](https://github.com/cainseing/drop-cli/actions/workflows/tests.yml/badge.svg?branch=development)](https://github.com/cainseing/drop-cli/actions/workflows/tests.yml)
+[![CI](https://github.com/cainseing/drop-cli/actions/workflows/ci.yml/badge.svg?branch=development)](https://github.com/cainseing/drop-cli/actions/workflows/ci.yml)
 [![Go Version](https://img.shields.io/badge/go-1.26-blue)](https://golang.org/dl/)
 
 **Drop CLI** is a command-line tool for securely sharing sensitive data—such as API keys, tokens, and credentials—through the [Drop API](https://github.com/cainseing/drop-api). It uses end-to-end encryption to ensure secrets remain private and accessible only to intended recipients.
@@ -71,6 +71,10 @@ Automatically detects your platform and installs the correct binary:
 
     drop get <token> > .env
 
+You can also pass the full token directly (with the `drop_` prefix) and it will be treated as a `get`:
+
+    drop drop_<token>
+
 ---
 
 ### Purge a Secret
@@ -79,20 +83,35 @@ Automatically detects your platform and installs the correct binary:
 
 ---
 
+### Manage Identity
+
+Set a GitHub or GitLab profile to associate with signed drops:
+
+    drop identity set github <username>
+    drop identity set gitlab <username>
+
+---
+
+### Check Version
+
+    drop version
+
+---
 
 ## Command-Line Options
 
 ### Drop Flags
 
-| Flag | Long Form    | Description                     | Default |
-|------|--------------|---------------------------------|---------|
-| `-t` | `--ttl`      | Expiry time in minutes          | `5`     |
-| `-r` | `--reads`    | Maximum number of allowed reads | `1`     |
-| `-s` | `--signed`   | Sign the drop with SSH key      | `false` |
+| Flag | Long Form    | Description                          | Default |
+|------|--------------|--------------------------------------|---------|
+| `-t` | `--ttl`      | Expiry time in minutes               | `5`     |
+| `-r` | `--reads`    | Maximum number of allowed reads      | `1`     |
+| `-s` | `--signed`   | Sign the drop with SSH key           | `false` |
+| `-c` | `--copy`     | Copy the token to clipboard          | `false` |
 
 Example:
 
-    drop -t 120 -r 3 "Temporary secret"
+    drop -t 120 -r 3 -c "Temporary secret"
 
 ---
 

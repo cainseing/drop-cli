@@ -30,16 +30,16 @@ func CreateRootCmd() *cobra.Command {
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			var input []byte
-			stat, _ := os.Stdin.Stat()
+			stat, err := os.Stdin.Stat()
 
-			if (stat.Mode() & os.ModeCharDevice) == 0 {
+			if err == nil && (stat.Mode()&os.ModeCharDevice) == 0 {
 				input, _ = io.ReadAll(os.Stdin)
 			} else if len(args) > 0 {
 				input = []byte(args[0])
 			}
 
 			if len(input) == 0 {
-				cmd.Help()
+				_ = cmd.Help()
 				return
 			}
 

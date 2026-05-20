@@ -68,10 +68,10 @@ func TestCheckForUpdates_RecentCheck(t *testing.T) {
 	cfg := config.LoadUserConfig()
 	originalTime := cfg.UpdateCheck
 	cfg.UpdateCheck = time.Now().Add(-1 * time.Hour) // 1 hour ago
-	config.SaveUserConfig(cfg)
+	_ = config.SaveUserConfig(cfg)
 	defer func() {
 		cfg.UpdateCheck = originalTime
-		config.SaveUserConfig(cfg)
+		_ = config.SaveUserConfig(cfg)
 	}()
 
 	// Since it's within 24 hours, should return false
@@ -86,10 +86,10 @@ func TestCheckForUpdates_Force(t *testing.T) {
 	cfg := config.LoadUserConfig()
 	originalTime := cfg.UpdateCheck
 	cfg.UpdateCheck = time.Now().Add(-1 * time.Hour)
-	config.SaveUserConfig(cfg)
+	_ = config.SaveUserConfig(cfg)
 	defer func() {
 		cfg.UpdateCheck = originalTime
-		config.SaveUserConfig(cfg)
+		_ = config.SaveUserConfig(cfg)
 	}()
 
 	// With force=true, should attempt check even if recent
