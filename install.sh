@@ -3,8 +3,15 @@
 # Configuration
 REPO="cainseing/drop-cli"
 INSTALL_PATH="/usr/local/bin/drop"
-# Points to the raw file in the main branch's bin folder
-BASE_URL="https://raw.githubusercontent.com/$REPO/main/bin"
+
+# Resolve the latest published GitHub Release tag
+LATEST=$(curl -sf "https://api.github.com/repos/$REPO/releases/latest" \
+  | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+if [ -z "$LATEST" ]; then
+    echo "Error Could not determine the latest release. Check your internet connection."
+    exit 1
+fi
+BASE_URL="https://github.com/$REPO/releases/download/$LATEST"
 
 echo "Checking system compatibility..."
 
