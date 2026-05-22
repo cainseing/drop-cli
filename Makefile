@@ -29,8 +29,8 @@ release: test
 
 publish:
 	@echo "Tagging and releasing v$(VERSION)..."
-	git tag v$(VERSION)
-	git push origin v$(VERSION)
+	@printf 'refs/tags/v$(VERSION) %s refs/tags/v$(VERSION) 0000000000000000000000000000000000000000\n' \
+		"$$(git rev-parse HEAD)" | bash .githooks/pre-push
 
 git-hooks:
 	@git config core.hooksPath .githooks

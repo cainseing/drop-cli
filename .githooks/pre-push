@@ -24,6 +24,13 @@ done
 if [ -f "${SENTINEL}" ]; then
     exit 0
 fi
+
+# Only allow releases from the development branch
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+if [[ "${CURRENT_BRANCH}" != "development" ]]; then
+    echo "Error: make publish must be run from the development branch (currently on '${CURRENT_BRANCH}')."
+    exit 1
+fi
 touch "${SENTINEL}"
 trap 'rm -f "${SENTINEL}"' EXIT
 
@@ -52,7 +59,15 @@ GOOS=linux  GOARCH=arm64 go build -ldflags "${LDFLAGS}" -o bin/drop-linux-arm64 
 GOOS=darwin GOARCH=arm64 go build -ldflags "${LDFLAGS}" -o bin/drop-darwin-arm64 ./cmd/drop
 GOOS=darwin GOARCH=amd64 go build -ldflags "${LDFLAGS}" -o bin/drop-darwin-amd64 ./cmd/drop
 
-# Push the tag (sentinel prevents this from re-entering the release flow)
+# Commit binaries, tag at that commit, then push branch and tag
+# (sentinel prevents these pushes from re-entering the release flow)
+echo "==> Committing binaries..."
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+git add bin/
+git commit -m "release: build binaries for ${VERSION}"
+git tag "${VERSION}"
+git push origin "${BRANCH}"
+
 echo "==> Pushing tag ${VERSION}..."
 git push origin "${VERSION}"
 
@@ -77,11 +92,11 @@ LINUX_AMD64=$(shasum -a 256  bin/drop-linux-amd64  | awk '{print $1}')
 echo "==> Updating brew tap..."
 WORK_DIR=$(mktemp -d)
 trap 'rm -rf "${WORK_DIR}"; rm -f "${SENTINEL}"' EXIT
-git clone "git@github.com:${TAP_REPO}.git" "${WORK_DIR}/tap"
+git clone --depth=1 "git@github.com:${TAP_REPO}.git" "${WORK_DIR}/tap"
 FORMULA="${WORK_DIR}/tap/${FORMULA_PATH}"
 
 sed -i '' "s/version \".*\"/version \"${VERSION_NO_V}\"/" "${FORMULA}"
-sed -i '' "s|releases/download/v[^/]*/|releases/download/${VERSION}/|g" "${FORMULA}"
+sed -i '' "s|https://raw.githubusercontent.com/${REPO}/[^/]*/bin/|https://raw.githubusercontent.com/${REPO}/${VERSION}/bin/|g" "${FORMULA}"
 sed -i '' "/drop-darwin-arm64/{n; s/sha256 \"[^\"]*\"/sha256 \"${DARWIN_ARM64}\"/;}" "${FORMULA}"
 sed -i '' "/drop-darwin-amd64/{n; s/sha256 \"[^\"]*\"/sha256 \"${DARWIN_AMD64}\"/;}" "${FORMULA}"
 sed -i '' "/drop-linux-arm64/{n;  s/sha256 \"[^\"]*\"/sha256 \"${LINUX_ARM64}\"/;}"  "${FORMULA}"
@@ -91,8 +106,12 @@ cd "${WORK_DIR}/tap"
 git config user.name "$(git -C "${OLDPWD}" config user.name)"
 git config user.email "$(git -C "${OLDPWD}" config user.email)"
 git add "${FORMULA_PATH}"
-git commit -m "chore: update drop to ${VERSION}"
+git commit -m "drop-cli release ${VERSION}"
 git push
+
+# Fast-forward main to match development
+echo "==> Updating main..."
+git -C "${OLDPWD}" push origin "${BRANCH}":main --force
 
 echo ""
 echo "==> Release ${VERSION} complete."
