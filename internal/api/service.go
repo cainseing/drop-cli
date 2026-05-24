@@ -11,13 +11,13 @@ import (
 
 	"github.com/cainseing/drop-cli/internal/config"
 	"github.com/cainseing/drop-cli/internal/crypto"
-	"github.com/cainseing/drop-cli/internal/display"
 	"github.com/cainseing/drop-cli/internal/identity"
+	"github.com/cainseing/drop-cli/internal/output"
 	"github.com/cainseing/drop-cli/internal/signer"
 	"golang.org/x/crypto/ssh"
 )
 
-var printError = display.PrintError
+var printError = output.PrintError
 var loadUserConfig = config.LoadUserConfig
 var encrypt = crypto.Encrypt
 
@@ -30,9 +30,9 @@ var fetchKeys = identity.FetchKeys
 var postBlobFunc = postBlob
 var writeClipboard = clipboard.WriteAll
 var stdoutStat = func() (os.FileInfo, error) { return os.Stdout.Stat() }
-var printProperty = display.PrintProperty
-var printPropertyToStderr = display.PrintPropertyToStderr
-var printSuccess = display.PrintSuccess
+var printProperty = output.PrintProperty
+var printPropertyToStderr = output.PrintPropertyToStderr
+var printSuccess = output.PrintSuccess
 var verifySignature = signer.VerifySignature
 var decrypt = crypto.Decrypt
 var getBlobFunc = getBlob
@@ -91,9 +91,9 @@ func HandleCreateCommand(input []byte, ttl int, reads int, signed bool, shouldCo
 	encodedBlob := base64.StdEncoding.EncodeToString(ciphertext)
 	encodedSignature := base64.StdEncoding.EncodeToString(signature)
 
+	fmt.Fprint(os.Stderr, output.DimText.Render("  uploading..."))
 	id, err := postBlobFunc(encodedBlob, ttl, reads, encodedSignature, cfg.Username, cfg.Provider)
-
-	fmt.Print("\r\033[K")
+	fmt.Fprint(os.Stderr, "\r\033[K")
 
 	if err != nil {
 		printError("API Error", err)
@@ -105,7 +105,7 @@ func HandleCreateCommand(input []byte, ttl int, reads int, signed bool, shouldCo
 
 	if signed {
 		fmt.Println()
-		printProperty("STATUS", display.StatusVerified.Render(fmt.Sprintf("Signed via %s", cfg.Provider)))
+		printProperty("STATUS", output.RenderVerified(fmt.Sprintf("Signed via %s", cfg.Provider)))
 		printProperty("SENDER", cfg.Username)
 	}
 
@@ -113,10 +113,22 @@ func HandleCreateCommand(input []byte, ttl int, reads int, signed bool, shouldCo
 		err := writeClipboard(token)
 		if err != nil {
 			printError("Could not copy token automatically", err)
+		} else {
+			fmt.Fprintln(os.Stderr, output.DimText.Render("  Copied to clipboard"))
 		}
 	}
 
-	fmt.Printf("%s\n\n", display.Token.Render(token))
+	fmt.Printf("%s\n\n", output.RenderToken(token))
+
+	expiryUnit := "minutes"
+	if ttl == 1 {
+		expiryUnit = "minute"
+	}
+	readUnit := "reads"
+	if reads == 1 {
+		readUnit = "read"
+	}
+	fmt.Fprintln(os.Stderr, output.DimText.Render(fmt.Sprintf("  expires in %d %s · %d %s max", ttl, expiryUnit, reads, readUnit)))
 }
 
 func HandleGetCommand(token string) {
@@ -150,9 +162,11 @@ func HandleGetCommand(token string) {
 		return
 	}
 
+	fmt.Fprint(os.Stderr, output.DimText.Render("  fetching..."))
 	response, err := getBlobFunc(id)
 
 	if err != nil {
+		fmt.Fprint(os.Stderr, "\r\033[K")
 		printError("", err)
 		return
 	}
@@ -170,7 +184,7 @@ func HandleGetCommand(token string) {
 	}
 
 	fi, err := stdoutStat()
-	if err == nil && (fi.Mode() & os.ModeCharDevice) == 0 {
+	if err == nil && (fi.Mode()&os.ModeCharDevice) == 0 {
 		fmt.Fprint(os.Stdout, string(plaintext))
 		return
 	}
@@ -185,7 +199,7 @@ func HandleGetCommand(token string) {
 		}
 
 		fmt.Fprintln(os.Stderr)
-		printPropertyToStderr("STATUS", display.StatusVerified.Render(fmt.Sprintf("Verified via %s", response.Provider)))
+		printPropertyToStderr("STATUS", output.RenderVerified(fmt.Sprintf("Verified via %s", response.Provider)))
 		printPropertyToStderr("SENDER", response.Sender)
 	}
 
@@ -200,7 +214,7 @@ func HandleGetCommand(token string) {
 		printPropertyToStderr("READS", statusText)
 	}
 
-	fmt.Println(display.Secret.Render(string(plaintext)))
+	fmt.Println(output.Secret.Render(string(plaintext)))
 }
 
 func HandlePurgeCommand(token string) {
@@ -220,7 +234,9 @@ func HandlePurgeCommand(token string) {
 
 	id := parts[1]
 
+	fmt.Fprint(os.Stderr, output.DimText.Render("  purging..."))
 	result, err := purgeBlobFunc(id)
+	fmt.Fprint(os.Stderr, "\r\033[K")
 
 	if err != nil {
 		printError("", err)

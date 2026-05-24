@@ -1,17 +1,18 @@
-package display
+package output
 
 import (
 	"fmt"
 	"os"
+	"strings"
 	"unicode"
 
 	"github.com/charmbracelet/lipgloss"
 )
 
 var (
-	accent  = lipgloss.AdaptiveColor{Light: "#00ADD8", Dark: "#00ADD8"}
-	success = lipgloss.Color("#A3BE8C")
-	danger  = lipgloss.Color("#BF616A")
+	accent  = lipgloss.AdaptiveColor{Light: "#10b981", Dark: "#10b981"}
+	success = lipgloss.Color("#34d399")
+	danger  = lipgloss.Color("#f87171")
 	dim     = lipgloss.Color("#666666")
 
 	LabelStyle = lipgloss.NewStyle().Foreground(dim).Width(12)
@@ -35,6 +36,16 @@ var (
 	StatusVerified = lipgloss.NewStyle().Foreground(success).Bold(true)
 	StatusError    = lipgloss.NewStyle().Foreground(danger).Bold(true)
 )
+
+func RenderVerified(text string) string {
+	return StatusVerified.Render("✓ " + text)
+}
+
+func RenderToken(token string) string {
+	prefix := lipgloss.NewStyle().Foreground(lipgloss.Color("#10b981")).Bold(true).Render("drop_")
+	body := lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFFFF")).Render(strings.TrimPrefix(token, "drop_"))
+	return "\n" + prefix + body
+}
 
 func PrintProperty(label string, value string) {
 	printPropertyTo(os.Stdout, label, value)
@@ -72,7 +83,7 @@ func PrintError(message string, err error) {
 	fmt.Fprintln(os.Stderr)
 
 	fmt.Fprintf(os.Stderr, "%s\n",
-		StatusError.Render("ERROR"),
+		StatusError.Render("✗ ERROR"),
 	)
 
 	var context string

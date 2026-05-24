@@ -7,9 +7,8 @@ import (
 
 	"github.com/cainseing/drop-cli/internal/api"
 	"github.com/cainseing/drop-cli/internal/config"
-	"github.com/cainseing/drop-cli/internal/display"
+	"github.com/cainseing/drop-cli/internal/output"
 	"github.com/cainseing/drop-cli/internal/update"
-	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 )
 
@@ -23,7 +22,7 @@ var (
 func CreateRootCmd() *cobra.Command {
 	var rootCmd = &cobra.Command{
 		Use:   "drop [secret]",
-		Short: "Secure, zero-knowledge, secret sharing CLI",
+		Short: "Zero-knowledge secret sharing",
 		Args:  cobra.MaximumNArgs(1),
 		CompletionOptions: cobra.CompletionOptions{
 			DisableDefaultCmd: true,
@@ -58,6 +57,8 @@ func CreateRootCmd() *cobra.Command {
 		createVersionCommand(),
 		createIdentityCmd(),
 	)
+
+	applyHelpFunc(rootCmd)
 
 	return rootCmd
 }
@@ -98,7 +99,7 @@ func createIdentityCmd() *cobra.Command {
 			provider, username := args[0], args[1]
 
 			if provider != "github" && provider != "gitlab" {
-				pterm.Error.Println("Unsupported provider. Use 'github' or 'gitlab'.")
+				output.PrintError("Unsupported provider. Use 'github' or 'gitlab'.", nil)
 				return
 			}
 
@@ -107,11 +108,11 @@ func createIdentityCmd() *cobra.Command {
 			cfg.Provider = provider
 
 			if err := config.SaveUserConfig(cfg); err != nil {
-				pterm.Error.Printf("Failed to save identity: %v\n", err)
+				output.PrintError("Failed to save identity", err)
 				return
 			}
 
-			pterm.Success.Printf("Identity saved! Drops will now be signed as @%s via %s\n", username, provider)
+			output.PrintSuccess(fmt.Sprintf("Signed as @%s via %s", username, provider), "Identity saved")
 		},
 	}
 
@@ -130,7 +131,7 @@ func createVersionCommand() *cobra.Command {
 			}
 
 			fmt.Fprintln(os.Stderr)
-			display.PrintPropertyToStderr("VERSION", config.Version)
+			output.PrintPropertyToStderr("VERSION", config.Version)
 			fmt.Fprintln(os.Stderr)
 		},
 	}

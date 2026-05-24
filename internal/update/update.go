@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/cainseing/drop-cli/internal/config"
-	"github.com/pterm/pterm"
+	"github.com/charmbracelet/lipgloss"
 )
 
 var getExecutable = os.Executable
@@ -51,24 +51,29 @@ func CheckForUpdates(currentVersion string, force bool) bool {
 		return false
 	}
 
-	message := ""
+	emerald := lipgloss.Color("#10b981")
+	dimStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#666666"))
+	versionStyle := lipgloss.NewStyle().Foreground(emerald).Bold(true)
+	cmdStyle := lipgloss.NewStyle().Foreground(emerald).Italic(true)
+	box := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(emerald).
+		Padding(0, 1)
+
+	var cmd string
 	if isBrewInstall() {
-		message = fmt.Sprintf("Update Available: %s -> %s\nRun %s to update.",
-			pterm.Gray(currentVersion),
-			pterm.LightGreen(release.TagName),
-			pterm.LightCyan("brew upgrade drop"))
+		cmd = "brew upgrade drop"
 	} else {
-		message = fmt.Sprintf("Update Available: %s -> %s\nRun %s to update.",
-			pterm.Gray(currentVersion),
-			pterm.LightGreen(release.TagName),
-			pterm.LightCyan("curl -sL getdrop.dev/install.sh | bash"))
+		cmd = "curl -sL getdrop.dev/install.sh | bash"
 	}
 
+	message := fmt.Sprintf("Update Available: %s → %s\nRun %s to update.",
+		dimStyle.Render(currentVersion),
+		versionStyle.Render(release.TagName),
+		cmdStyle.Render(cmd))
+
 	fmt.Println()
-	pterm.DefaultBox.
-		WithTitle(pterm.LightYellow(" New Version ")).
-		WithBoxStyle(pterm.NewStyle(pterm.FgLightYellow)).
-		Println(message)
+	fmt.Println(box.Render(message))
 	fmt.Println()
 
 	return true
