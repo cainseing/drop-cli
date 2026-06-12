@@ -10,7 +10,9 @@ import (
 )
 
 func main() {
-	update.CheckForUpdates(config.Version, false)
+	if len(os.Args) <= 1 || os.Args[1] != "version" {
+		update.CheckForUpdates(config.Version, false)
+	}
 
 	if len(os.Args) > 1 && strings.HasPrefix(os.Args[1], "drop_") {
 		token := strings.TrimPrefix(os.Args[1], "drop_")

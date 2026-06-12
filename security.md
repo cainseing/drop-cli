@@ -1,36 +1,75 @@
 # Security Policy
 
-## Security Philosophy
-"Drop" is built on a **Zero-Knowledge** architecture. The core principle is that the server should never possess the ability to decrypt user data. Security is enforced at the edge (the CLI) rather than the infrastructure.
+## Supported versions
 
-## Supported Versions
-Only the latest version of the Drop CLI is supported for security updates. Please ensure you are running the most recent release before reporting an issue.
+Only the latest release is supported. Update before reporting a vulnerability.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| v0.3.x  | ✅ Supported       |
-| < v0.3  | ❌ Not Supported   |
+| Version | Supported |
+|---------|-----------|
+| v0.5.x  | Yes       |
+| < v0.5  | No        |
 
-## Security Architecture
+---
 
-### 1. Encryption (AES-256-GCM)
-Secrets are encrypted locally using AES-256 in Galois/Counter Mode (GCM). 
-* **Key Generation:** A new key is generated for every single drop.
-* **Nonce:** A unique nonce is used for every encryption operation.
-* **Integrity:** GCM provides authenticated encryption, ensuring that if a Drop is tampered with on the server, decryption will fail locally.
+## Security model
 
-### 2. Envelope Protocol
-Data is wrapped in a versioned envelope before encryption:
-`[Data Length (4 bytes)] [Plaintext Payload] [Random Padding]`
+Drop is built on a zero-knowledge architecture. The server stores only an opaque encrypted blob—it has no access to the plaintext or the decryption key at any point.
 
-### 3. Zero-Knowledge Proof
-The decryption key is appended to the `drop_` token locally. This token (containing the Protocol Version, ID and the Key) is never stored in its entirety on the server. The server only stores the encrypted blob and the ID.
+### Encryption — AES-256-GCM
 
-## Reporting a Vulnerability
-If you discover a security vulnerability, please do not open a public issue. Instead, follow these steps:
+Secrets are encrypted on the client before upload using AES-256 in Galois/Counter Mode.
 
-1. **Email:** Send a detailed report to security@getdrop.dev.
-2. **Details:** Include a proof-of-concept, the version of the CLI, and your OS.
-3. **Response:** Acknowledgement of your report will typically occur within 48 hours.
+- A fresh 256-bit key is generated per drop using `crypto/rand`.
+- A unique random nonce is generated for every encryption operation.
+- GCM provides authenticated encryption. Any server-side tampering causes decryption to fail locally with an authentication error.
 
-We follow a coordinated disclosure model. We ask that you do not share details about the vulnerability until a fix has been published.
+### Envelope and padding
+
+Before encryption, the plaintext is wrapped in a versioned envelope:
+
+```
+[ 4-byte length (big-endian) ][ plaintext ][ random padding ]
+```
+
+The minimum ciphertext size is 128 bytes. Padding is filled with random bytes from `crypto/rand`, ensuring payload sizes do not leak information about secret length.
+
+### Token structure
+
+The decryption key is embedded in the token and never transmitted to or stored by the server:
+
+```
+drop_<base64url( protocol_version "." blob_id "." hex_key )>
+```
+
+The server generates and returns the `blob_id` after the blob is uploaded. The client embeds it in the token locally. The server stores the `blob_id` and the ciphertext; the decryption key exists only in the token. Whoever holds the token holds the key.
+
+### SSH signing (optional)
+
+Drops can be cryptographically signed using your local SSH private key (`id_ed25519`, `id_rsa`, or `id_ecdsa`). The signature is verified against public keys fetched from your GitHub or GitLab profile at retrieval time.
+
+- Signing uses the raw ciphertext as the payload, not the plaintext.
+- Verification confirms both the sender's identity and that the ciphertext has not been modified since it was signed.
+- If signature verification fails, the retrieved secret is discarded and an error is shown to the recipient.
+
+### What the server holds
+
+| Data | Stored server-side |
+|------|--------------------|
+| Encrypted blob | Yes |
+| Blob ID | Yes |
+| Signature (if signed) | Yes |
+| Sender profile (if signed) | Yes |
+| Decryption key | **No** |
+| Plaintext | **No** |
+
+---
+
+## Reporting a vulnerability
+
+Do not open a public GitHub issue for security vulnerabilities.
+
+1. **Email** `security@getdrop.dev` with a detailed report.
+2. **Include** a proof-of-concept, the CLI version (`drop version`), and your OS.
+3. **Response** — acknowledgement within 48 hours.
+
+We follow coordinated disclosure. Please do not share vulnerability details publicly until a fix has been released.

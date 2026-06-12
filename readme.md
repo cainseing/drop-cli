@@ -1,142 +1,167 @@
-# Drop CLI - Secure, zero-knowledge, secret sharing CLI
+# drop
 
 [![CI](https://github.com/cainseing/drop-cli/actions/workflows/ci.yml/badge.svg?branch=development)](https://github.com/cainseing/drop-cli/actions/workflows/ci.yml)
 [![Go Version](https://img.shields.io/badge/go-1.26-blue)](https://golang.org/dl/)
 
-**Drop CLI** is a command-line tool for securely sharing sensitive data—such as API keys, tokens, and credentials—through the [Drop API](https://github.com/cainseing/drop-api). It uses end-to-end encryption to ensure secrets remain private and accessible only to intended recipients.
-
-Ideal for development teams that need a fast, secure way to exchange confidential information.
+A zero-knowledge CLI for securely sharing secrets. Secrets are encrypted locally before leaving your machine, ensuring the server only stores an unreadable ciphertext blob—along with minimal metadata if you choose to sign the drop.
 
 ---
 
-## Security & Technical Workflow
+## Install
 
-Drop follows a zero-trust, client-side encryption model:
+**Homebrew (macOS)**
 
-1. **Client-Side Encryption**  
-   Uses **AES-256-GCM** for authenticated encryption before data leaves your machine.
+```sh
+brew tap cainseing/tap && brew install drop
+```
 
-2. **Size Obfuscation**  
-   Applies binary padding to prevent traffic analysis based on payload length.
+**Install script (macOS & Linux)**
 
-3. **Secure Encapsulation**  
-   Prepends a 4-byte header inside the encrypted payload to enable accurate decoding and decryption.
+```sh
+curl -sL getdrop.dev/install.sh | bash
+```
 
-4. **Zero-Knowledge Transport**  
-   Generates a composite token containing:
-    - Protocol Version
-    - Identifier
-    - Encryption Key
+**From source**
 
-   The encryption key is never transmitted or stored on the server.
-
----
-
-## Installation
-
-Install the `drop` binary to your system path.
-
-### Homebrew (macOS)
-
-    brew tap cainseing/tap &&
-    brew install drop
-
-### Install Script (macOS & Linux)
-
-Automatically detects your platform and installs the correct binary:
-
-    curl -sL getdrop.dev/install.sh | bash
+```sh
+git clone https://github.com/cainseing/drop-cli.git
+cd drop-cli
+make install   # builds and copies to /usr/local/bin
+```
 
 ---
 
 ## Usage
 
-### Create a Secret
+### Create a secret
 
-#### Standard Input
+Pass a value directly:
 
-    drop "api_key"
+```sh
+drop "my_api_key"
+```
 
-#### From a Pipe
+Or pipe from stdin:
 
-    cat .env | drop
+```sh
+cat .env | drop
+```
+
+Both print a `drop_…` token to stdout.
+
+### Retrieve a secret
+
+```sh
+drop get <token>
+```
+
+Pipe directly into a file:
+
+```sh
+drop get <token> > .env
+```
+
+As a shorthand, you can pass the full token (with the `drop_` prefix) as the first argument and `get` is implied:
+
+```sh
+drop drop_<token>
+```
+
+### Purge a secret
+
+Destroy a drop before it is read:
+
+```sh
+drop purge <token>
+```
+
+### Signed drops
+
+Sign a drop with your SSH key so recipients can verify who created it:
+
+```sh
+drop identity set github <username>   # or gitlab
+drop -s "secret value"
+```
+
+The CLI reads your local SSH private key (`id_ed25519`, `id_rsa`, or `id_ecdsa`) and verifies it matches your public keys on GitHub/GitLab. When the recipient fetches a signed drop, the signature is verified automatically.
+
+### Version
+
+```sh
+drop version
+```
+
+Prints the running version and checks for updates. Updates are also checked automatically once per day when running any command.
 
 ---
 
-### Retrieve a Secret
+## Flags
 
-    drop get <token>
+These flags apply to the create command (`drop [secret]`):
 
-    or
+| Flag | Long form | Default | Description |
+|------|-----------|---------|-------------|
+| `-t` | `--ttl`   | `5`     | Expiry in minutes (max 10080 = 7 days) |
+| `-r` | `--reads` | `1`     | Maximum number of reads before the secret is destroyed |
+| `-s` | `--signed`| `false` | Sign the drop with your local SSH key |
+| `-c` | `--copy`  | `false` | Copy the token to clipboard after creation |
 
-    drop get <token> > .env
+**Example — share a secret that expires in 2 hours and allows 3 reads:**
 
-You can also pass the full token directly (with the `drop_` prefix) and it will be treated as a `get`:
-
-    drop drop_<token>
-
----
-
-### Purge a Secret
-
-    drop purge <token>
-
----
-
-### Manage Identity
-
-Set a GitHub or GitLab profile to associate with signed drops:
-
-    drop identity set github <username>
-    drop identity set gitlab <username>
+```sh
+drop -t 120 -r 3 "temporary_password"
+```
 
 ---
 
-### Check Version
+## Limits
 
-    drop version
-
----
-
-## Command-Line Options
-
-### Drop Flags
-
-| Flag | Long Form    | Description                          | Default |
-|------|--------------|--------------------------------------|---------|
-| `-t` | `--ttl`      | Expiry time in minutes               | `5`     |
-| `-r` | `--reads`    | Maximum number of allowed reads      | `1`     |
-| `-s` | `--signed`   | Sign the drop with SSH key           | `false` |
-| `-c` | `--copy`     | Copy the token to clipboard          | `false` |
-
-Example:
-
-    drop -t 120 -r 3 -c "Temporary secret"
+| Parameter | Limit |
+|-----------|-------|
+| Payload size | 1 MB |
+| TTL | 1 minute – 7 days |
+| Reads | 1 – unlimited |
 
 ---
 
-## Build & Release
+## How it works
 
-The project supports cross-compilation for major platforms.
+1. The secret is encrypted locally with **AES-256-GCM** using a randomly generated key.
+2. The plaintext is wrapped in an envelope (`[4-byte length][plaintext][random padding]`) before encryption to obfuscate payload size.
+3. The encrypted blob is uploaded to the server. The server has no access to the key.
+4. A token is generated locally:
 
-### Build All Targets
+   ```
+   drop_<base64(protocol_version.blob_id.hex_key)>
+   ```
 
-    make release
+   The encryption key is embedded in the token and never stored server-side.
+5. When retrieved, the token is split, the blob is fetched, and the secret is decrypted locally.
 
-This generates binaries for:
+See [SECURITY.md](SECURITY.md) for a full breakdown of the security model.
 
-- Linux
-- macOS
+---
+
+## Building
+
+```sh
+make build          # build for current platform → ./drop
+make release        # cross-compile for Linux and macOS (amd64 + arm64) → ./bin/
+make test           # run tests
+make test-coverage  # run tests with coverage report
+make lint           # run golangci-lint
+make sec            # run gosec
+```
 
 ---
 
 ## Contributing
 
-Contributions are welcome via a pull request
+Pull requests are welcome. Open an issue first for significant changes.
 
 ---
 
-## Security & Support
+## Security
 
-- Report security issues **privately**.
-- Open issues on GitHub for bugs or feature requests. 
+Report vulnerabilities privately — see [SECURITY.md](SECURITY.md) for the disclosure process.

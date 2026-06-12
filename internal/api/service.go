@@ -91,9 +91,7 @@ func HandleCreateCommand(input []byte, ttl int, reads int, signed bool, shouldCo
 	encodedBlob := base64.StdEncoding.EncodeToString(ciphertext)
 	encodedSignature := base64.StdEncoding.EncodeToString(signature)
 
-	fmt.Fprint(os.Stderr, output.DimText.Render("  uploading..."))
 	id, err := postBlobFunc(encodedBlob, ttl, reads, encodedSignature, cfg.Username, cfg.Provider)
-	fmt.Fprint(os.Stderr, "\r\033[K")
 
 	if err != nil {
 		printError("API Error", err)
@@ -103,32 +101,31 @@ func HandleCreateCommand(input []byte, ttl int, reads int, signed bool, shouldCo
 	rawToken := fmt.Sprintf("%s.%s.%s", config.ProtocolVersion, id, hex.EncodeToString(key))
 	token := "drop_" + base64.RawURLEncoding.EncodeToString([]byte(rawToken))
 
+	fmt.Printf("%s\n\n", output.RenderToken(token))
+
 	if signed {
-		fmt.Println()
-		printProperty("STATUS", output.RenderVerified(fmt.Sprintf("Signed via %s", cfg.Provider)))
-		printProperty("SENDER", cfg.Username)
+		fmt.Fprintln(os.Stderr, output.DimText.Render(fmt.Sprintf("- Signed via %s by %s", cfg.Provider, cfg.Username)))
 	}
+
+	expiryUnit := "minutes"
+	if ttl == 1 {
+		expiryUnit = "minute"
+	}
+	readUnit := "Secret will be destroyed on read"
+	if reads > 1 {
+		readUnit = fmt.Sprintf("%d reads remaining", reads)
+	}
+	fmt.Fprintln(os.Stderr, output.DimText.Render(fmt.Sprintf("- Expires in %d %s", ttl, expiryUnit)))
+	fmt.Fprintln(os.Stderr, output.DimText.Render(fmt.Sprintf("- %s", readUnit)))
 
 	if shouldCopy {
 		err := writeClipboard(token)
 		if err != nil {
 			printError("Could not copy token automatically", err)
 		} else {
-			fmt.Fprintln(os.Stderr, output.DimText.Render("  Copied to clipboard"))
+			fmt.Fprintln(os.Stderr, output.DimText.Render("- Copied to clipboard"))
 		}
 	}
-
-	fmt.Printf("%s\n\n", output.RenderToken(token))
-
-	expiryUnit := "minutes"
-	if ttl == 1 {
-		expiryUnit = "minute"
-	}
-	readUnit := "reads"
-	if reads == 1 {
-		readUnit = "read"
-	}
-	fmt.Fprintln(os.Stderr, output.DimText.Render(fmt.Sprintf("  expires in %d %s · %d %s max", ttl, expiryUnit, reads, readUnit)))
 }
 
 func HandleGetCommand(token string) {
@@ -162,11 +159,9 @@ func HandleGetCommand(token string) {
 		return
 	}
 
-	fmt.Fprint(os.Stderr, output.DimText.Render("  fetching..."))
 	response, err := getBlobFunc(id)
 
 	if err != nil {
-		fmt.Fprint(os.Stderr, "\r\033[K")
 		printError("", err)
 		return
 	}
@@ -188,8 +183,6 @@ func HandleGetCommand(token string) {
 		fmt.Fprint(os.Stdout, string(plaintext))
 		return
 	}
-
-	fmt.Print("\r\033[K")
 
 	if response.Signature != "" {
 		err := verifySignature(response.Blob, response.Signature, response.Sender, response.Provider)
@@ -214,6 +207,7 @@ func HandleGetCommand(token string) {
 		printPropertyToStderr("READS", statusText)
 	}
 
+	fmt.Println()
 	fmt.Println(output.Secret.Render(string(plaintext)))
 }
 
@@ -234,9 +228,7 @@ func HandlePurgeCommand(token string) {
 
 	id := parts[1]
 
-	fmt.Fprint(os.Stderr, output.DimText.Render("  purging..."))
 	result, err := purgeBlobFunc(id)
-	fmt.Fprint(os.Stderr, "\r\033[K")
 
 	if err != nil {
 		printError("", err)

@@ -5,15 +5,47 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/cainseing/drop-cli/internal/config"
-	"github.com/charmbracelet/lipgloss"
+	"github.com/fatih/color"
 )
 
 var getExecutable = os.Executable
+
+// ansiRe matches ANSI escape sequences for stripping in width calculations.
+var ansiRe = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+
+func ansi(hex string, bold bool, s string) string {
+	if color.NoColor {
+		return s
+	}
+	r, g, b := hexRGB(hex)
+	prefix := fmt.Sprintf("\033[38;2;%d;%d;%dm", r, g, b)
+	if bold {
+		prefix = "\033[1m" + prefix
+	}
+	return prefix + s + "\033[0m"
+}
+
+func hexRGB(h string) (uint8, uint8, uint8) {
+	h = strings.TrimPrefix(h, "#")
+	if len(h) != 6 {
+		return 255, 255, 255
+	}
+	ri, _ := strconv.ParseUint(h[0:2], 16, 8)
+	gi, _ := strconv.ParseUint(h[2:4], 16, 8)
+	bi, _ := strconv.ParseUint(h[4:6], 16, 8)
+	return uint8(ri), uint8(gi), uint8(bi)
+}
+
+// visibleLen returns the printable rune count of s, ignoring ANSI escape codes.
+func visibleLen(s string) int {
+	return len([]rune(ansiRe.ReplaceAllString(s, "")))
+}
 
 func CheckForUpdates(currentVersion string, force bool) bool {
 	fi, _ := os.Stdout.Stat()
@@ -51,15 +83,6 @@ func CheckForUpdates(currentVersion string, force bool) bool {
 		return false
 	}
 
-	emerald := lipgloss.Color("#10b981")
-	dimStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#666666"))
-	versionStyle := lipgloss.NewStyle().Foreground(emerald).Bold(true)
-	cmdStyle := lipgloss.NewStyle().Foreground(emerald).Italic(true)
-	box := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(emerald).
-		Padding(0, 1)
-
 	var cmd string
 	if isBrewInstall() {
 		cmd = "brew upgrade drop"
@@ -67,13 +90,20 @@ func CheckForUpdates(currentVersion string, force bool) bool {
 		cmd = "curl -sL getdrop.dev/install.sh | bash"
 	}
 
-	message := fmt.Sprintf("Update Available: %s → %s\nRun %s to update.",
-		dimStyle.Render(currentVersion),
-		versionStyle.Render(release.TagName),
-		cmdStyle.Render(cmd))
+	line1 := fmt.Sprintf("  Update Available: %s → %s",
+		ansi("#64748b", false, currentVersion),
+		ansi("#10b981", true, release.TagName),
+	)
+	line2 := fmt.Sprintf("  Run %s to update.", ansi("#10b981", false, cmd))
+
+	width := max(visibleLen(line1), visibleLen(line2)) + 2
+	bar := strings.Repeat("─", width)
 
 	fmt.Println()
-	fmt.Println(box.Render(message))
+	fmt.Println(ansi("#10b981", false, "╭"+bar+"╮"))
+	fmt.Println(ansi("#10b981", false, "│") + line1 + strings.Repeat(" ", width-visibleLen(line1)) + ansi("#10b981", false, "│"))
+	fmt.Println(ansi("#10b981", false, "│") + line2 + strings.Repeat(" ", width-visibleLen(line2)) + ansi("#10b981", false, "│"))
+	fmt.Println(ansi("#10b981", false, "╰"+bar+"╯"))
 	fmt.Println()
 
 	return true
