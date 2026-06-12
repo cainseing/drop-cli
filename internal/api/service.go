@@ -98,7 +98,18 @@ func HandleCreateCommand(input []byte, ttl int, reads int, signed bool, shouldCo
 		return
 	}
 
-	rawToken := fmt.Sprintf("%s.%s.%s", config.ProtocolVersion, id, hex.EncodeToString(key))
+	signedFlag := "0"
+	if signed {
+		signedFlag = "1"
+	}
+
+	// The signed flag is packed into the third segment as "hexKey:signedFlag"
+	// rather than as a fourth dot-separated segment. This keeps the token at
+	// 3 dot-separated parts, so older clients (which check for exactly 3
+	// parts before comparing protocol versions) still reach the protocol
+	// version check and show a "please update" message instead of "Token
+	// provided is not valid".
+	rawToken := fmt.Sprintf("%s.%s.%s:%s", config.ProtocolVersion, id, hex.EncodeToString(key), signedFlag)
 	token := "drop_" + base64.RawURLEncoding.EncodeToString([]byte(rawToken))
 
 	fmt.Printf("%s\n\n", output.RenderToken(token))
@@ -142,7 +153,7 @@ func HandleGetCommand(token string) {
 		return
 	}
 
-	usedProtocol, id, keyHex := parts[0], parts[1], parts[2]
+	usedProtocol, id, keyAndFlag := parts[0], parts[1], parts[2]
 
 	if config.ProtocolVersion != usedProtocol {
 		if config.ProtocolVersion > usedProtocol {
@@ -152,6 +163,14 @@ func HandleGetCommand(token string) {
 		printError("To decrypt this Drop, an update is required. Please install the latest version of the Drop CLI.", nil)
 		return
 	}
+
+	// The third segment is "hexKey:signedFlag" (see HandleCreateCommand).
+	keyParts := strings.SplitN(keyAndFlag, ":", 2)
+	if len(keyParts) != 2 {
+		printError("Token provided is not valid", nil)
+		return
+	}
+	keyHex, signedFlag := keyParts[0], keyParts[1]
 
 	key, err := hex.DecodeString(keyHex)
 	if err != nil {
@@ -178,13 +197,12 @@ func HandleGetCommand(token string) {
 		return
 	}
 
-	fi, err := stdoutStat()
-	if err == nil && (fi.Mode()&os.ModeCharDevice) == 0 {
-		fmt.Fprint(os.Stdout, string(plaintext))
-		return
-	}
+	if signedFlag == "1" {
+		if response.Signature == "" || response.Sender == "" || response.Provider == "" {
+			printError("This drop was signed by the sender but the signature is missing. The content may have been tampered with.", nil)
+			return
+		}
 
-	if response.Signature != "" {
 		err := verifySignature(response.Blob, response.Signature, response.Sender, response.Provider)
 		if err != nil {
 			printError("Signature verification failed. The content may have been tampered with.", err)
@@ -194,6 +212,12 @@ func HandleGetCommand(token string) {
 		fmt.Fprintln(os.Stderr)
 		printPropertyToStderr("STATUS", output.RenderVerified(fmt.Sprintf("Verified via %s", response.Provider)))
 		printPropertyToStderr("SENDER", response.Sender)
+	}
+
+	fi, err := stdoutStat()
+	if err == nil && (fi.Mode()&os.ModeCharDevice) == 0 {
+		fmt.Fprint(os.Stdout, string(plaintext))
+		return
 	}
 
 	if response.RemainingReads > 0 {

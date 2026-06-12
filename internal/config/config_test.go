@@ -92,8 +92,8 @@ func TestPublicConfigConstants(t *testing.T) {
 	if Version == "" {
 		t.Fatal("expected Version to be set")
 	}
-	if ProtocolVersion != "1" {
-		t.Fatalf("expected ProtocolVersion to be %q, got %q", "1", ProtocolVersion)
+	if ProtocolVersion != "2" {
+		t.Fatalf("expected ProtocolVersion to be %q, got %q", "2", ProtocolVersion)
 	}
 	if MaxBlobSize != 1*1024*1024 {
 		t.Fatalf("expected MaxBlobSize to be %d, got %d", 1*1024*1024, MaxBlobSize)

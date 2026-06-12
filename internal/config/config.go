@@ -8,7 +8,7 @@ import (
 )
 
 var Version = "v0.4.0-beta"
-const ProtocolVersion = "1"
+const ProtocolVersion = "2"
 const MaxBlobSize = 1 * 1024 * 1024 // 1MB
 const MaxTTLMinutes = 10080         // 7 Days
 var ApiURL = "https://api.getdrop.dev/"

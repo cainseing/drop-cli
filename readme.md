@@ -133,10 +133,15 @@ drop -t 120 -r 3 "temporary_password"
 4. A token is generated locally:
 
    ```
-   drop_<base64(protocol_version.blob_id.hex_key)>
+   drop_<base64(protocol_version.blob_id.hex_key:signed_flag)>
    ```
 
-   The encryption key is embedded in the token and never stored server-side.
+   The encryption key is embedded in the token and never stored server-side. The
+   `signed_flag` records whether the sender signed the drop, so a server cannot
+   silently strip a signature without the recipient noticing. It is packed into
+   the same segment as the key (rather than as its own dot-separated segment)
+   so older CLI versions still recognize the token as having 3 parts and show
+   a "please update" message instead of "Token provided is not valid".
 5. When retrieved, the token is split, the blob is fetched, and the secret is decrypted locally.
 
 See [SECURITY.md](SECURITY.md) for a full breakdown of the security model.

@@ -38,10 +38,12 @@ The minimum ciphertext size is 128 bytes. Padding is filled with random bytes fr
 The decryption key is embedded in the token and never transmitted to or stored by the server:
 
 ```
-drop_<base64url( protocol_version "." blob_id "." hex_key )>
+drop_<base64url( protocol_version "." blob_id "." hex_key ":" signed_flag )>
 ```
 
 The server generates and returns the `blob_id` after the blob is uploaded. The client embeds it in the token locally. The server stores the `blob_id` and the ciphertext; the decryption key exists only in the token. Whoever holds the token holds the key.
+
+The `signed_flag` (`1` or `0`) records, at creation time, whether the sender signed the drop. Because the token is shared out-of-band and never seen by the server, this flag cannot be tampered with server-side — it sets the recipient's expectation independently of whatever the server reports.
 
 ### SSH signing (optional)
 
@@ -50,6 +52,7 @@ Drops can be cryptographically signed using your local SSH private key (`id_ed25
 - Signing uses the raw ciphertext as the payload, not the plaintext.
 - Verification confirms both the sender's identity and that the ciphertext has not been modified since it was signed.
 - If signature verification fails, the retrieved secret is discarded and an error is shown to the recipient.
+- If the token's `signed_flag` indicates the drop was signed but the server response is missing the signature, sender, or provider, the secret is discarded and an error is shown — a server cannot downgrade a signed drop to unsigned without detection.
 
 ### What the server holds
 

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/base64"
 	"testing"
 
 	"github.com/cainseing/drop-cli/internal/config"
@@ -121,7 +122,7 @@ func TestHandleGetCommand_InvalidParts(t *testing.T) {
 	}
 }
 
-func TestHandleGetCommand_OutdatedProtocol(t *testing.T) {
+func TestHandleGetCommand_SenderProtocolOutOfDate(t *testing.T) {
 	var errors []string
 	originalPrintError := printError
 	printError = func(msg string, err error) {
@@ -129,16 +130,30 @@ func TestHandleGetCommand_OutdatedProtocol(t *testing.T) {
 	}
 	defer func() { printError = originalPrintError }()
 
-	// Mock a token with old protocol
-	// Protocol "0" vs current "1"
-	// But since config.ProtocolVersion is "1", and if usedProtocol < current, it should say update required
-	// Wait, the code: if config.ProtocolVersion > usedProtocol { old sender } else { update required }
-	// For usedProtocol = "0", config > used, so old sender
-	// To test update required, need usedProtocol > config, but since config is "1", can't.
+	// Token from protocol "1", current config.ProtocolVersion is "2".
+	HandleGetCommand("drop_" + "MS5pZC5rZXk6MA") // 1.id.key:0
 
-	// Perhaps skip this test or mock config.ProtocolVersion
+	want := "This Drop is incompatible because the sender's version is out of date. Please ask them to update their Drop CLI and generate a new Drop."
+	if len(errors) != 1 || errors[0] != want {
+		t.Errorf("Expected sender-out-of-date error, got %v", errors)
+	}
+}
 
-	// For now, test the invalid key
+func TestHandleGetCommand_RecipientUpdateRequired(t *testing.T) {
+	var errors []string
+	originalPrintError := printError
+	printError = func(msg string, err error) {
+		errors = append(errors, msg)
+	}
+	defer func() { printError = originalPrintError }()
+
+	// Token from protocol "3", current config.ProtocolVersion is "2".
+	HandleGetCommand("drop_" + "My5pZC5rZXk6MA") // 3.id.key:0
+
+	want := "To decrypt this Drop, an update is required. Please install the latest version of the Drop CLI."
+	if len(errors) != 1 || errors[0] != want {
+		t.Errorf("Expected recipient-update-required error, got %v", errors)
+	}
 }
 
 func TestHandleGetCommand_InvalidKey(t *testing.T) {
@@ -150,10 +165,43 @@ func TestHandleGetCommand_InvalidKey(t *testing.T) {
 	defer func() { printError = originalPrintError }()
 
 	// Token with invalid hex key
-	HandleGetCommand("drop_" + "MS5pZC5pbnZhbGlk") // 1.id.invalid
+	HandleGetCommand("drop_" + "Mi5pZC5pbnZhbGlkOjA") // 2.id.invalid:0
 
 	if len(errors) != 1 || errors[0] != "Invalid encryption key in token" {
 		t.Errorf("Expected invalid key error, got %v", errors)
+	}
+}
+
+func TestHandleGetCommand_SignedDropMissingSignature(t *testing.T) {
+	var errors []string
+	originalPrintError := printError
+	printError = func(msg string, err error) {
+		errors = append(errors, msg)
+	}
+	defer func() { printError = originalPrintError }()
+
+	originalGetBlobFunc := getBlobFunc
+	getBlobFunc = func(id string) (*GetDropResponse, error) {
+		return &GetDropResponse{
+			Blob: base64.StdEncoding.EncodeToString([]byte("ciphertext")),
+			// Signature, Sender, Provider intentionally omitted, simulating
+			// a server that stripped them from a drop signed at creation.
+		}, nil
+	}
+	defer func() { getBlobFunc = originalGetBlobFunc }()
+
+	originalDecrypt := decrypt
+	decrypt = func(ciphertext []byte, key []byte) ([]byte, error) {
+		return []byte("secret"), nil
+	}
+	defer func() { decrypt = originalDecrypt }()
+
+	// Token with protocol 2, signed_flag = 1, but the server response above
+	// has no signature.
+	HandleGetCommand("drop_" + "Mi50ZXN0LWlkLjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA6MQ")
+
+	if len(errors) != 1 || errors[0] != "This drop was signed by the sender but the signature is missing. The content may have been tampered with." {
+		t.Errorf("Expected signature-stripped error, got %v", errors)
 	}
 }
 
@@ -186,8 +234,8 @@ func TestHandlePurgeCommand_Success(t *testing.T) {
 	}
 	defer func() { purgeBlobFunc = originalPurgeBlobFunc }()
 
-	// Valid token: 1.id.key
-	HandlePurgeCommand("drop_" + "MS5pZC5rZXk") // 1.id.key
+	// Valid token: 2.id.key:0
+	HandlePurgeCommand("drop_" + "Mi5pZC5rZXk6MA") // 2.id.key:0
 
 	if len(successes) != 1 || successes[0] != "Purged" {
 		t.Errorf("Expected success, got %v", successes)
