@@ -1,5 +1,5 @@
 BINARY_NAME=drop
-VERSION=0.5.0-beta
+VERSION=0.5.1-beta
 LDFLAGS=-ldflags "-X github.com/cainseing/drop-cli/internal/config.Version=v$(VERSION)"
 
 .PHONY: all build install clean test install-hooks publish
