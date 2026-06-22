@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var logo = "      _\n" +
+var Logo = "      _\n" +
 	"   __| |_ __ ___  _ __\n" +
 	"  / _` | '__/ _ \\| '_ \\\n" +
 	" | (_| | | | (_) | |_) |\n" +
@@ -42,10 +42,20 @@ func hexRGB(h string) (uint8, uint8, uint8) {
 }
 
 const (
-	emerald = "#10b981"
-	dim     = "#64748b"
-	white   = "#f1f5f9"
+	Emerald = "#10b981"
+	Dim     = "#64748b"
+	White   = "#f1f5f9"
 )
+
+const (
+	emerald = Emerald
+	dim     = Dim
+	white   = White
+)
+
+func RenderText(hex string, bold bool, s string) string {
+	return ansi(hex, bold, s)
+}
 
 func applyHelpFunc(cmd *cobra.Command) {
 	cmd.SetHelpFunc(renderHelp)
@@ -58,7 +68,7 @@ func renderHelp(cmd *cobra.Command, _ []string) {
 	fmt.Println()
 
 	if !cmd.HasParent() {
-		for _, line := range strings.Split(logo, "\n") {
+		for _, line := range strings.Split(Logo, "\n") {
 			fmt.Printf("  %s\n", ansi(emerald, false, line))
 		}
 		fmt.Println()
