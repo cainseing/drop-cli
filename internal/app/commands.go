@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/cainseing/drop-cli/internal/api"
 	"github.com/cainseing/drop-cli/internal/config"
@@ -126,13 +127,20 @@ func createVersionCommand() *cobra.Command {
 		Short: "View running version",
 		Args:  cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println()
+			for _, line := range strings.Split(Logo, "\n") {
+				fmt.Printf("  %s\n", RenderText(Emerald, false, line))
+			}
+			fmt.Println()
+			fmt.Printf("  %s\n", ansi(white, false, "Zero-knowledge secret sharing"))
+
 			if update.CheckForUpdates(config.Version, true) {
 				return
 			}
 
-			fmt.Fprintln(os.Stderr)
-			output.PrintPropertyToStderr("VERSION", config.Version)
-			fmt.Fprintln(os.Stderr)
+			fmt.Println()
+			fmt.Printf("  %s\n", RenderText(Emerald, true, config.Version))
+			fmt.Println()
 		},
 	}
 }
