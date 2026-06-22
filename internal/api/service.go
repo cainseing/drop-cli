@@ -198,6 +198,7 @@ func HandleGetCommand(token string) {
 	}
 
 	if signedFlag == "1" {
+		fmt.Println()
 		if response.Signature == "" || response.Sender == "" || response.Provider == "" {
 			printError("This drop was signed by the sender but the signature is missing. The content may have been tampered with.", nil)
 			return
@@ -209,26 +210,23 @@ func HandleGetCommand(token string) {
 			return
 		}
 
-		fmt.Fprintln(os.Stderr)
-		printPropertyToStderr("STATUS", output.RenderVerified(fmt.Sprintf("Verified via %s", response.Provider)))
-		printPropertyToStderr("SENDER", response.Sender)
+		fmt.Fprintln(os.Stderr, output.DimText.Render(fmt.Sprintf("- Verified via %s by %s", response.Provider, response.Sender)))
+	}
+
+	if response.RemainingReads > 0 {
+		fmt.Println()
+		label := "reads"
+		if response.RemainingReads == 1 {
+			label = "read"
+		}
+
+		fmt.Fprintln(os.Stderr, output.DimText.Render(fmt.Sprintf("- %d %s remaining", response.RemainingReads, label)))
 	}
 
 	fi, err := stdoutStat()
 	if err == nil && (fi.Mode()&os.ModeCharDevice) == 0 {
 		fmt.Fprint(os.Stdout, string(plaintext))
 		return
-	}
-
-	if response.RemainingReads > 0 {
-		label := "reads"
-		if response.RemainingReads == 1 {
-			label = "read"
-		}
-
-		fmt.Fprintln(os.Stderr)
-		statusText := fmt.Sprintf("%d %s remaining", response.RemainingReads, label)
-		printPropertyToStderr("READS", statusText)
 	}
 
 	fmt.Println()
