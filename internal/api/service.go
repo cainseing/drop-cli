@@ -31,7 +31,6 @@ var postBlobFunc = postBlob
 var writeClipboard = clipboard.WriteAll
 var stdoutStat = func() (os.FileInfo, error) { return os.Stdout.Stat() }
 var printProperty = output.PrintProperty
-var printPropertyToStderr = output.PrintPropertyToStderr
 var printSuccess = output.PrintSuccess
 var verifySignature = signer.VerifySignature
 var decrypt = crypto.Decrypt

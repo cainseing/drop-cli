@@ -4,7 +4,7 @@
 
 Commit messages should follow this format:
 
-**First line:** A high-level sentence that outlines the changes
+**First line:** A high-level sentence that outlines the changes in lowercase
 
 **Then:** Each change itemized with a `-` prefix
 

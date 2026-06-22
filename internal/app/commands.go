@@ -47,10 +47,10 @@ func CreateRootCmd() *cobra.Command {
 		},
 	}
 
-	rootCmd.Flags().IntVarP(&ttl, "ttl", "t", 5, "Expiry in minutes")
-	rootCmd.Flags().IntVarP(&reads, "reads", "r", 1, "Maximum number of times drop can be read")
-	rootCmd.Flags().BoolVarP(&signed, "signed", "s", false, "Sign the drop")
-	rootCmd.Flags().BoolVarP(&shouldCopy, "copy", "c", false, "Copy token to clipboard")
+	rootCmd.Flags().IntVarP(&ttl, "ttl", "t", 5, "expiry in minutes")
+	rootCmd.Flags().IntVarP(&reads, "reads", "r", 1, "maximum number of times drop can be read")
+	rootCmd.Flags().BoolVarP(&signed, "signed", "s", false, "sign the drop")
+	rootCmd.Flags().BoolVarP(&shouldCopy, "copy", "c", false, "copy token to clipboard")
 
 	rootCmd.AddCommand(
 		createGetCmd(),
@@ -67,7 +67,7 @@ func CreateRootCmd() *cobra.Command {
 func createGetCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "get [token]",
-		Short: "Fetch drop",
+		Short: "fetch a drop",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			api.HandleGetCommand(args[0])
@@ -78,7 +78,7 @@ func createGetCmd() *cobra.Command {
 func createPurgeCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "purge [token]",
-		Short: "Purge a drop",
+		Short: "purge a drop",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			api.HandlePurgeCommand(args[0])
@@ -89,12 +89,12 @@ func createPurgeCmd() *cobra.Command {
 func createIdentityCmd() *cobra.Command {
 	var identityCmd = &cobra.Command{
 		Use:   "identity",
-		Short: "Manage your signing identity",
+		Short: "manage your signing identity",
 	}
 
 	var setCmd = &cobra.Command{
 		Use:   "set [github|gitlab] [username]",
-		Short: "Assign a public profile to your signed drops",
+		Short: "assign a public profile to your signed drops",
 		Args:  cobra.ExactArgs(2),
 		Run: func(cmd *cobra.Command, args []string) {
 			provider, username := args[0], args[1]
@@ -124,7 +124,7 @@ func createIdentityCmd() *cobra.Command {
 func createVersionCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",
-		Short: "View running version",
+		Short: "view running version",
 		Args:  cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println()
